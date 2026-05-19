@@ -1,0 +1,11 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/domain" },
+    { "path": "packages/database" },
+    { "path": "packages/licensing" },
+    { "path": "packages/ui-skins" },
+    { "path": "apps/desktop" },
+    { "path": "apps/central-web" }
+  ]
+}

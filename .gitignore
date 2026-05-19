@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-electron/
+.vite/
+.next/
+coverage/
+*.log
+.env
+.env.local
+local-license.json
+backup-output/
+mysql-data/
