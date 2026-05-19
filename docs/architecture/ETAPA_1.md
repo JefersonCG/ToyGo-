@@ -13,13 +13,25 @@ O ponto mais importante é manter o Desktop offline-first. Por isso, a comunica�
 
 O modelo GALINT foi adaptado assim:
 
-- `InventoryEngine` recebe comandos operacionais e sempre grava `StockMovement`.
+- `InventoryEngine` recebe comandos operacionais e sempre grava `StockMovement`, sem chamar financeiro ou integrações externas diretamente.
 - `StockMovement` é ledger imutável e fonte da verdade do estoque.
 - `StockBalance` é read-model derivado para tela rápida e alertas.
-- `FinanceLedgerEntry` registra o reflexo financeiro com origem rastreável.
+- `FinanceLedgerEntry` registra o reflexo financeiro com origem rastreável, orquestrado pela camada `application`.
 - `PriceNormalization` normaliza valores por unidade base.
 - `UnitConversionEngine` impede divergência entre embalagem, unidade, dose, kit e consumo real.
-- `BackupService` prepara dumps locais, manifestos e restauração auditável.
+- `BackupService` fica fora do core, no pacote `@toygo/backup`, porque backup é infraestrutura.
+
+## Separação de módulos
+
+A correção arquitetural desta etapa separa o sistema em camadas explícitas:
+
+- `packages/domain`: core puro de estoque, saldo, preço, conversão e ledger financeiro.
+- `packages/application`: políticas de orquestração, como o reflexo financeiro de uma movimentação de estoque.
+- `packages/integration-ports`: contratos para fiscal, hardware, booking, LGPD, membership, analytics e payments.
+- `packages/backup`: backup e retenção, fora do core.
+- `packages/licensing`: licenciamento híbrido, também fora do core.
+
+Essa divisão evita que funcionalidades futuras entrem como dependência obrigatória do motor transacional.
 
 ## Gaps de mercado já previstos
 

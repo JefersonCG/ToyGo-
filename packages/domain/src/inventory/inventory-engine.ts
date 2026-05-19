@@ -1,4 +1,3 @@
-import type { FinanceLedgerService } from "../finance/finance-ledger";
 import { PriceNormalization } from "./price-normalization";
 import type { BalanceProvider } from "./balance-provider";
 import type { MovementIdFactory, MovementWriter, StockMovement, StockMovementSource } from "./types";
@@ -8,7 +7,6 @@ export class InventoryEngine {
     private readonly movementWriter: MovementWriter,
     private readonly balanceProvider: BalanceProvider,
     private readonly priceNormalization: PriceNormalization,
-    private readonly financeLedger: FinanceLedgerService,
     private readonly idFactory: MovementIdFactory
   ) {}
 
@@ -19,25 +17,8 @@ export class InventoryEngine {
     totalValueCents: number;
     paymentMethod?: "cash" | "pix" | "card" | "boleto" | "internal";
   }): Promise<StockMovement> {
-    const movement = this.createMovement(input, "in");
+    const movement = this.createMovement(withPaymentMetadata(input), "in");
     await this.persistAndProject(movement);
-
-    if (input.source === "purchase" && input.totalValueCents > 0) {
-      await this.financeLedger.append({
-        id: this.idFactory.createId("fin"),
-        tenantId: input.tenantId,
-        operationalUnitId: input.operationalUnitId,
-        direction: "debit",
-        source: "inventory_purchase",
-        sourceId: movement.id,
-        amountCents: input.totalValueCents,
-        paymentMethod: input.paymentMethod ?? "internal",
-        occurredAt: input.occurredAt,
-        createdAt: movement.createdAt,
-        createdByUserId: input.createdByUserId
-      });
-    }
-
     return movement;
   }
 
@@ -46,26 +27,10 @@ export class InventoryEngine {
     quantity: number;
     unit: string;
     totalValueCents: number;
+    paymentMethod?: "cash" | "pix" | "card" | "boleto" | "internal";
   }): Promise<StockMovement> {
-    const movement = this.createMovement(input, "out");
+    const movement = this.createMovement(withPaymentMetadata(input), "out");
     await this.persistAndProject(movement);
-
-    if (input.source === "play_session_sale" || input.source === "cross_sell") {
-      await this.financeLedger.append({
-        id: this.idFactory.createId("fin"),
-        tenantId: input.tenantId,
-        operationalUnitId: input.operationalUnitId,
-        direction: "credit",
-        source: input.source === "cross_sell" ? "cross_sell" : "play_session_checkout",
-        sourceId: movement.id,
-        amountCents: input.totalValueCents,
-        paymentMethod: "internal",
-        occurredAt: input.occurredAt,
-        createdAt: movement.createdAt,
-        createdByUserId: input.createdByUserId
-      });
-    }
-
     return movement;
   }
 
@@ -137,4 +102,18 @@ interface InventoryCommand {
   occurredAt: string;
   createdByUserId: string;
   metadata?: Record<string, unknown>;
+}
+
+function withPaymentMetadata<TCommand extends InventoryCommand & { paymentMethod?: string }>(command: TCommand): TCommand & { metadata?: Record<string, unknown> } {
+  if (!command.paymentMethod) {
+    return command;
+  }
+
+  return {
+    ...command,
+    metadata: {
+      ...command.metadata,
+      paymentMethod: command.paymentMethod
+    }
+  };
 }

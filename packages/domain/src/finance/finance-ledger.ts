@@ -2,6 +2,8 @@ import type { ToygoId } from "../inventory/types";
 
 export type FinanceLedgerDirection = "debit" | "credit";
 
+export type PaymentMethod = "cash" | "pix" | "card" | "boleto" | "internal";
+
 export type FinanceLedgerSource =
   | "play_session_checkout"
   | "cross_sell"
@@ -21,7 +23,7 @@ export interface FinanceLedgerEntry {
   source: FinanceLedgerSource;
   sourceId: ToygoId;
   amountCents: number;
-  paymentMethod?: "cash" | "pix" | "card" | "boleto" | "internal";
+  paymentMethod?: PaymentMethod;
   occurredAt: string;
   createdAt: string;
   createdByUserId: ToygoId;

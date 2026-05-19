@@ -14,7 +14,10 @@
     "ignoreDeprecations": "6.0",
     "paths": {
       "@toygo/domain": ["packages/domain/src/index.ts"],
+      "@toygo/application": ["packages/application/src/index.ts"],
+      "@toygo/backup": ["packages/backup/src/index.ts"],
       "@toygo/database": ["packages/database/src/index.ts"],
+      "@toygo/integration-ports": ["packages/integration-ports/src/index.ts"],
       "@toygo/licensing": ["packages/licensing/src/index.ts"],
       "@toygo/ui-skins": ["packages/ui-skins/src/index.ts"]
     }
