@@ -47,6 +47,7 @@ ipcMain.handle("toygo:get-runtime-status", async () => {
   const license = await licenseEngine.getLocalStatus();
 
   return {
+    mariadb: mysql,
     mysql,
     license,
     machineId: license.machineId,

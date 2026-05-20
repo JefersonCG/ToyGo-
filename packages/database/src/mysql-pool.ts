@@ -19,9 +19,9 @@ export async function checkMysqlConnection(config: ToygoMysqlConfig): Promise<{ 
   const pool = createToygoMysqlPool(config);
   try {
     await pool.query("SELECT 1 AS ok");
-    return { ok: true, message: "MySQL local conectado" };
+    return { ok: true, message: "MariaDB local conectado" };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Falha desconhecida ao conectar no MySQL";
+    const message = error instanceof Error ? error.message : "Falha desconhecida ao conectar no MariaDB local";
     return { ok: false, message };
   } finally {
     await pool.end();

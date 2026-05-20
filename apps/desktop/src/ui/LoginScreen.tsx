@@ -69,7 +69,7 @@ export function LoginScreen({ skin, onSkinChange }: LoginScreenProps) {
           <div className="grid grid-cols-3 gap-3">
             <StatusTile
               icon={<Database className="h-5 w-5" />}
-              label="MySQL local"
+              label="MariaDB local"
               value={runtime?.mysql.message ?? "Verificando banco"}
               tone={runtime?.mysql.ok ? "ok" : runtime ? "danger" : "loading"}
             />

@@ -6,7 +6,7 @@ Ecossistema híbrido para gestão de parquinhos indoor, inspirado no modelo GALI
 
 - Monorepo com Desktop, Sistema Central e pacotes compartilhados.
 - Desktop offline-first em Electron + Vite + React + Tailwind CSS v3.
-- Banco local preparado para instalação/provisionamento junto ao executável do Desktop.
+- MariaDB local preparado para instalação/provisionamento junto ao executável do Desktop.
 - Core transacional separado de módulos periféricos: domínio, aplicação, portas de integração, backup, banco, licenciamento e UI.
 - Motor de licenciamento híbrido com comunicação restrita a Machine ID, ativação, bloqueio e PIX/Boleto.
 - Tela de login moderna com skins `dark`, `cyberpunk` e `light`, status da licença e indicador MySQL.
@@ -26,7 +26,7 @@ packages/
   licensing/     Ativação, cache local e verificação de bloqueio
   ui-skins/      Tokens visuais compartilhados
 infra/
-  mysql/desktop/ Configuração MySQL local essencial do executável
+  mysql/desktop/ Configuração MariaDB local essencial do executável, usando protocolo MySQL
   mysql/modules/ Schemas modulares opcionais por capacidade futura
 scripts/
   mysql/         Automação de preparação do banco local
@@ -42,7 +42,7 @@ npm run typecheck
 npm run dev:desktop
 ```
 
-Para preparar o MySQL local do Desktop:
+Para preparar o MariaDB local do Desktop durante desenvolvimento:
 
 ```powershell
 ./scripts/mysql/init-local-desktop.ps1 -RootPassword "sua-senha-root"
@@ -50,9 +50,9 @@ Para preparar o MySQL local do Desktop:
 
 ## Banco local do Desktop
 
-O instalador do ToyGo! Desktop deve provisionar o banco local junto com o executável. Isso é requisito primordial para o modo 100% offline.
+O instalador do ToyGo! Desktop deve provisionar o MariaDB local junto com o executável. Isso é requisito primordial para o modo 100% offline.
 
-A base atual está escrita para dialeto MySQL/MariaDB. Caso a decisão final seja PostgreSQL 16.11, o projeto precisa de adapter, schema e scripts separados, porque PostgreSQL não é compatível com o schema MySQL atual.
+A decisão oficial do ToyGo! Desktop é **MariaDB local**. O projeto ainda usa o driver `mysql2` e variáveis legadas `TOYGO_DESKTOP_MYSQL_*` como compatibilidade de protocolo, mas as novas configurações devem usar `TOYGO_DESKTOP_MARIADB_*`.
 
 Detalhes da decisão estão em `docs/architecture/DESKTOP_DATABASE_INSTALLER.md`.
 
