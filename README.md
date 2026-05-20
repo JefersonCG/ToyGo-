@@ -54,8 +54,8 @@ Para preparar o MySQL local do Desktop:
 
 O core não conhece fiscal, hardware, booking, LGPD, analytics, backup nem licenciamento. Esses pontos entram por portas e adapters, documentados em `docs/architecture/MODULE_BOUNDARIES.md`.
 
-## Propriedade e acesso
+## Licença proprietária
 
-ToyGo! é um projeto privado e proprietário. O código-fonte, a arquitetura, os módulos e os artefatos deste repositório não são distribuídos como software open source e não concedem permissão pública de uso, cópia, modificação ou redistribuição.
+ToyGo! é um projeto privado e proprietário de Jeferson dos Santos Paula. O código-fonte, a arquitetura, os módulos e os artefatos deste repositório não são distribuídos como software open source e não concedem permissão pública de uso, cópia, modificação ou redistribuição.
 
-A venda, o licenciamento, a implantação comercial e a distribuição do ToyGo! são direitos exclusivos do proprietário comercial do projeto. Qualquer acesso ao código não representa autorização para revenda, sublicenciamento, publicação, distribuição ou uso comercial por terceiros.
+A venda, o licenciamento, a implantação comercial e a distribuição do ToyGo! são direitos exclusivos de Jeferson dos Santos Paula. Qualquer acesso ao código não representa autorização para revenda, sublicenciamento, publicação, distribuição ou uso comercial por terceiros.
