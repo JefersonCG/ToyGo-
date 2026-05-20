@@ -53,3 +53,7 @@ Para preparar o MySQL local do Desktop:
 `StockMovement` e `FinanceLedgerEntry` são append-only. Toda alteração operacional relevante cria um novo lançamento e os saldos (`StockBalance`) são read-models derivados, nunca a fonte da verdade.
 
 O core não conhece fiscal, hardware, booking, LGPD, analytics, backup nem licenciamento. Esses pontos entram por portas e adapters, documentados em `docs/architecture/MODULE_BOUNDARIES.md`.
+
+## Propriedade e acesso
+
+ToyGo! é um projeto privado e proprietário. O código-fonte, a arquitetura, os módulos e os artefatos deste repositório não são distribuídos como software open source e não concedem permissão pública de uso, cópia, modificação ou redistribuição.
