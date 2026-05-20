@@ -9,7 +9,15 @@ Ecossistema híbrido para gestão de parquinhos indoor, inspirado no modelo GALI
 - MariaDB local preparado para instalação/provisionamento junto ao executável do Desktop.
 - Core transacional separado de módulos periféricos: domínio, aplicação, portas de integração, backup, banco, licenciamento e UI.
 - Motor de licenciamento híbrido com comunicação restrita a Machine ID, ativação, bloqueio e PIX/Boleto.
-- Tela de login moderna com skins `dark`, `cyberpunk` e `light`, status da licença e indicador MySQL.
+- Tela de login moderna com skins `dark`, `cyberpunk` e `light`, status da licença e indicador MariaDB.
+
+## Etapa 2 entregue
+
+- Painel operacional do Desktop com linhas horizontais dinâmicas.
+- Cronômetros em tempo real com alerta visual de tempo próximo e tempo estourado.
+- Adição de brinquedos/carrinhos na linha da criança.
+- Venda cruzada de bomboniere passando pelo `InventoryEngine` e refletindo no ledger financeiro pela camada `application`.
+- Schema MariaDB preparado para responsáveis, crianças, ativos de recreação, sessões e linhas de cobrança.
 
 ## Estrutura
 

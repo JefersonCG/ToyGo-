@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 export type ToygoId = string;
 
 export type StockMovementDirection = "in" | "out" | "neutral";
@@ -66,6 +64,8 @@ export interface MovementIdFactory {
 
 export class DefaultMovementIdFactory implements MovementIdFactory {
   createId(prefix: string): ToygoId {
-    return `${prefix}_${randomUUID()}`;
+    const browserCrypto = globalThis as { crypto?: { randomUUID?: () => string } };
+    const randomPart = browserCrypto.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+    return `${prefix}_${randomPart}`;
   }
 }

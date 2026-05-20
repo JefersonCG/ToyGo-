@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Database, KeyRound, Loader2, Lock, MonitorDot, Palette, WifiOff } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Database, KeyRound, Loader2, Lock, LogIn, MonitorDot, Palette, WifiOff } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toygoSkins, type ToygoSkin } from "@toygo/ui-skins";
@@ -6,9 +6,10 @@ import { toygoSkins, type ToygoSkin } from "@toygo/ui-skins";
 interface LoginScreenProps {
   skin: ToygoSkin;
   onSkinChange: (skin: ToygoSkin) => void;
+  onOpenOperation: () => void;
 }
 
-export function LoginScreen({ skin, onSkinChange }: LoginScreenProps) {
+export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreenProps) {
   const [runtime, setRuntime] = useState<ToygoRuntimeStatus | null>(null);
   const [licenseKey, setLicenseKey] = useState("");
   const [isActivating, setIsActivating] = useState(false);
@@ -125,6 +126,15 @@ export function LoginScreen({ skin, onSkinChange }: LoginScreenProps) {
                 {error}
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={onOpenOperation}
+              className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-accent bg-accent/10 px-5 font-bold text-accent transition hover:bg-accent hover:text-accent-contrast"
+            >
+              <LogIn className="h-5 w-5" />
+              Abrir painel operacional
+            </button>
           </div>
         </div>
 

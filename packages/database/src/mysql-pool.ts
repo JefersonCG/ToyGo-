@@ -1,8 +1,8 @@
-import mysql from "mysql2/promise";
+import { createPool, type Pool } from "mysql2/promise";
 import type { ToygoMysqlConfig } from "./mysql-config";
 
-export function createToygoMysqlPool(config: ToygoMysqlConfig): mysql.Pool {
-  return mysql.createPool({
+export function createToygoMysqlPool(config: ToygoMysqlConfig): Pool {
+  return createPool({
     host: config.host,
     port: config.port,
     database: config.database,
