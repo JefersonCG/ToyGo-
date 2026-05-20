@@ -6,7 +6,7 @@ Ecossistema híbrido para gestão de parquinhos indoor, inspirado no modelo GALI
 
 - Monorepo com Desktop, Sistema Central e pacotes compartilhados.
 - Desktop offline-first em Electron + Vite + React + Tailwind CSS v3.
-- MySQL 8.0+ local preparado para instalação junto ao executável.
+- Banco local preparado para instalação/provisionamento junto ao executável do Desktop.
 - Core transacional separado de módulos periféricos: domínio, aplicação, portas de integração, backup, banco, licenciamento e UI.
 - Motor de licenciamento híbrido com comunicação restrita a Machine ID, ativação, bloqueio e PIX/Boleto.
 - Tela de login moderna com skins `dark`, `cyberpunk` e `light`, status da licença e indicador MySQL.
@@ -47,6 +47,14 @@ Para preparar o MySQL local do Desktop:
 ```powershell
 ./scripts/mysql/init-local-desktop.ps1 -RootPassword "sua-senha-root"
 ```
+
+## Banco local do Desktop
+
+O instalador do ToyGo! Desktop deve provisionar o banco local junto com o executável. Isso é requisito primordial para o modo 100% offline.
+
+A base atual está escrita para dialeto MySQL/MariaDB. Caso a decisão final seja PostgreSQL 16.11, o projeto precisa de adapter, schema e scripts separados, porque PostgreSQL não é compatível com o schema MySQL atual.
+
+Detalhes da decisão estão em `docs/architecture/DESKTOP_DATABASE_INSTALLER.md`.
 
 ## Regra arquitetural central
 
