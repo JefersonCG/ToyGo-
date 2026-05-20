@@ -57,3 +57,5 @@ O core não conhece fiscal, hardware, booking, LGPD, analytics, backup nem licen
 ## Propriedade e acesso
 
 ToyGo! é um projeto privado e proprietário. O código-fonte, a arquitetura, os módulos e os artefatos deste repositório não são distribuídos como software open source e não concedem permissão pública de uso, cópia, modificação ou redistribuição.
+
+A venda, o licenciamento, a implantação comercial e a distribuição do ToyGo! são direitos exclusivos do proprietário comercial do projeto. Qualquer acesso ao código não representa autorização para revenda, sublicenciamento, publicação, distribuição ou uso comercial por terceiros.
