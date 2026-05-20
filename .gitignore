@@ -1,10 +1,13 @@
 node_modules/
 dist/
 dist-electron/
+dist-types/
 .vite/
 .next/
 coverage/
 *.log
+*.tsbuildinfo
+typecheck-result.tmp.txt
 .env
 .env.local
 local-license.json
