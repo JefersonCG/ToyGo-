@@ -2,6 +2,8 @@
 
 Ecossistema híbrido para gestão de parquinhos indoor, inspirado no modelo GALINT de ledger imutável, estoque transacional e rastreabilidade financeira.
 
+Para visão executiva do que já foi concluído, pendências, riscos e roadmap, consulte `README_EXECUTIVO.md`.
+
 ## Etapa 1 entregue
 
 - Monorepo com Desktop, Sistema Central e pacotes compartilhados.
