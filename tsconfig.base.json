@@ -11,7 +11,7 @@
     "declaration": true,
     "sourceMap": true,
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@toygo/domain": ["packages/domain/src/index.ts"],
       "@toygo/application": ["packages/application/src/index.ts"],
