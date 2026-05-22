@@ -1,9 +1,10 @@
-import { AlertTriangle, Clock3, DoorOpen, Gauge, PackagePlus, Plus, ReceiptText, ShoppingBasket, TimerReset, UserPlus } from "lucide-react";
+import { AlertTriangle, Boxes, ChartNoAxesColumn, Clock3, DoorOpen, Gauge, PackagePlus, Plus, ReceiptText, Settings, ShoppingBasket, TimerReset, UserPlus, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toygoSkins, type ToygoSkin } from "@toygo/ui-skins";
+import type { ToygoSkin } from "@toygo/ui-skins";
 import { CrossSellInventoryService, InventoryFinancePolicy, MonitoringSessionPricingPolicy, type PlaySessionPricingSnapshot } from "@toygo/application";
 import { DefaultMovementIdFactory, FinanceLedgerService, InventoryEngine, InMemoryBalanceProvider, PriceNormalization, UnitConversionEngine, type FinanceLedgerEntry, type MovementWriter, type StockMovement } from "@toygo/domain";
+import { SkinSwitcher } from "./SkinSwitcher";
 
 interface MainMonitoringPanelProps {
   skin: ToygoSkin;
@@ -62,6 +63,8 @@ const crossSellProducts: CrossSellProduct[] = [
   { itemId: "candy-combo", label: "Combo doce", unit: "unidade", unitPriceCents: 1400, stockBaseUnits: 30 }
 ];
 
+const performanceBars = [46, 68, 52, 82, 63, 74, 58];
+
 export function MainMonitoringPanel({ skin, onSkinChange, onReturnToLogin }: MainMonitoringPanelProps) {
   const [now, setNow] = useState(() => new Date());
   const [guardianName, setGuardianName] = useState("Amanda Souza");
@@ -102,6 +105,8 @@ export function MainMonitoringPanel({ skin, onSkinChange, onReturnToLogin }: Mai
     const addOnsTotal = line.addOns.reduce((sum, addOn) => sum + addOn.totalCents, 0);
     return total + (snapshot?.totalTimeCents ?? 0) + addOnsTotal;
   }, 0);
+  const attentionCount = Array.from(snapshots.values()).filter((snapshot) => snapshot.status === "warning" || snapshot.status === "overtime").length;
+  const averageTicketCents = sessionLines.length > 0 ? Math.round(activeTotalCents / sessionLines.length) : 0;
 
   function addSession() {
     setError(null);
@@ -166,102 +171,163 @@ export function MainMonitoringPanel({ skin, onSkinChange, onReturnToLogin }: Mai
   }
 
   return (
-    <main className="min-h-screen bg-app px-6 py-5 text-app">
-      <header className="mb-5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-lg bg-accent text-accent-contrast">
-            <Gauge className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted">ToyGo! Desktop</p>
-            <h1 className="text-2xl font-black tracking-normal">Painel operacional</h1>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {(Object.keys(toygoSkins) as ToygoSkin[]).map((option) => (
-            <button key={option} type="button" onClick={() => onSkinChange(option)} className={`h-10 rounded-md border px-3 text-sm font-bold ${skin === option ? "border-accent bg-accent text-accent-contrast" : "border-panel-strong bg-input"}`}>
-              {toygoSkins[option].label}
-            </button>
-          ))}
-          <button type="button" onClick={onReturnToLogin} className="inline-flex h-10 items-center gap-2 rounded-md border border-panel-strong bg-input px-3 text-sm font-bold">
-            <DoorOpen className="h-4 w-4" />
-            Login
-          </button>
-        </div>
-      </header>
-
-      <section className="mb-4 grid grid-cols-[1fr_280px_280px_170px] gap-3 rounded-lg border border-panel bg-panel p-4 shadow-panel">
-        <label className="space-y-1 text-sm font-bold text-muted">
-          Responsavel
-          <input value={guardianName} onChange={(event) => setGuardianName(event.target.value)} className="h-11 w-full rounded-md border border-panel-strong bg-input px-3 text-app outline-none focus:ring-4 focus:ring-accent/30" />
-        </label>
-        <label className="space-y-1 text-sm font-bold text-muted">
-          Crianca
-          <input value={childName} onChange={(event) => setChildName(event.target.value)} className="h-11 w-full rounded-md border border-panel-strong bg-input px-3 text-app outline-none focus:ring-4 focus:ring-accent/30" />
-        </label>
-        <label className="space-y-1 text-sm font-bold text-muted">
-          Brinquedo ou carrinho
-          <select value={assetId} onChange={(event) => setAssetId(event.target.value)} className="h-11 w-full rounded-md border border-panel-strong bg-input px-3 text-app outline-none focus:ring-4 focus:ring-accent/30">
-            {playAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
-          </select>
-        </label>
-        <button type="button" onClick={addSession} className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-4 font-black text-accent-contrast">
-          <UserPlus className="h-5 w-5" />
-          Iniciar
-        </button>
-      </section>
-
-      {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-danger/50 bg-danger/10 px-4 py-3 text-sm font-bold text-danger">
-          <AlertTriangle className="h-5 w-5" />
-          {error}
-        </div>
-      )}
-
-      <section className="grid grid-cols-[1fr_320px] gap-4">
-        <div className="space-y-3">
-          <div className="grid grid-cols-[1.2fr_1fr_150px_150px_130px_220px] gap-3 px-3 text-xs font-black uppercase tracking-[0.12em] text-muted">
-            <span>Responsavel / crianca</span>
-            <span>Brinquedo</span>
-            <span>Cronometro</span>
-            <span>Status</span>
-            <span>Total</span>
-            <span>Acoes</span>
-          </div>
-          {sessionLines.map((line) => {
-            const asset = findAsset(line.assetId);
-            const snapshot = snapshots.get(line.id)!;
-            const addOnsTotal = line.addOns.reduce((sum, addOn) => sum + addOn.totalCents, 0);
-            return (
-              <SessionRow
-                key={line.id}
-                line={line}
-                asset={asset}
-                snapshot={snapshot}
-                totalCents={snapshot.totalTimeCents + addOnsTotal}
-                onAddAsset={addAssetToLine}
-                onAddCrossSell={addCrossSell}
-                onRemove={removeLine}
-              />
-            );
-          })}
-        </div>
-
-        <aside className="space-y-4">
-          <MetricPanel icon={<Clock3 className="h-5 w-5" />} label="Linhas ativas" value={String(sessionLines.length)} />
-          <MetricPanel icon={<ReceiptText className="h-5 w-5" />} label="Receita projetada" value={formatCurrency(activeTotalCents)} />
-          <div className="rounded-lg border border-panel bg-panel p-4 shadow-panel">
-            <div className="mb-3 flex items-center gap-2 font-black">
-              <ShoppingBasket className="h-5 w-5 text-accent" />
-              Ledger de venda cruzada
+    <main className="min-h-screen bg-app text-app transition-colors duration-300">
+      <div className="grid min-h-screen grid-cols-[248px_minmax(0,1fr)]">
+        <aside className="flex min-h-screen flex-col border-r border-panel-strong bg-sidebar px-5 py-5 text-white">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-lg bg-accent text-accent-contrast shadow-control">
+              <Gauge className="h-6 w-6" />
             </div>
-            <div className="space-y-2 text-sm text-muted">
-              {ledgerEvents.length === 0 ? <p>Nenhuma baixa registrada nesta sessao.</p> : ledgerEvents.map((event) => <p key={event} className="rounded-md bg-input p-2">{event}</p>)}
+            <div>
+              <p className="text-lg font-black">ToyGo!</p>
+              <p className="text-xs font-bold uppercase text-slate-300">Operacao</p>
             </div>
+          </div>
+
+          <nav className="mt-7 space-y-2 text-sm font-bold text-slate-300">
+            <SidebarNavItem icon={<Gauge className="h-4 w-4" />} label="Painel" active />
+            <SidebarNavItem icon={<Users className="h-4 w-4" />} label="Sessoes" />
+            <SidebarNavItem icon={<Boxes className="h-4 w-4" />} label="Estoque" />
+            <SidebarNavItem icon={<ReceiptText className="h-4 w-4" />} label="Caixa" />
+            <SidebarNavItem icon={<Settings className="h-4 w-4" />} label="Ajustes" />
+          </nav>
+
+          <div className="mt-auto space-y-4">
+            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <p className="text-xs font-bold uppercase text-slate-300">Total aberto</p>
+              <p className="mt-1 text-2xl font-black">{formatCurrency(activeTotalCents)}</p>
+            </div>
+            <SkinSwitcher skin={skin} onSkinChange={onSkinChange} showLabel={false} />
           </div>
         </aside>
-      </section>
+
+        <section className="min-w-0 px-5 py-5">
+          <header className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase text-muted">ToyGo! Desktop</p>
+              <h1 className="text-3xl font-black tracking-normal">Painel operacional</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="rounded-md border border-panel bg-panel px-3 py-2 text-right shadow-control">
+                <p className="text-xs font-bold text-muted">Agora</p>
+                <p className="font-mono text-sm font-black">{now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</p>
+              </div>
+              <button type="button" onClick={onReturnToLogin} className="inline-flex h-11 items-center gap-2 rounded-md border border-panel-strong bg-input px-4 text-sm font-black transition hover:border-accent focus:outline-none focus:ring-4 focus:ring-accent/30">
+                <DoorOpen className="h-4 w-4" />
+                Login
+              </button>
+            </div>
+          </header>
+
+          <section className="mb-4 grid grid-cols-4 gap-3">
+            <MetricPanel icon={<Clock3 className="h-5 w-5" />} label="Linhas ativas" value={String(sessionLines.length)} detail="Sessoes em curso" tone="accent" />
+            <MetricPanel icon={<ReceiptText className="h-5 w-5" />} label="Receita aberta" value={formatCurrency(activeTotalCents)} detail="Tempo + consumo" tone="success" />
+            <MetricPanel icon={<ChartNoAxesColumn className="h-5 w-5" />} label="Ticket medio" value={formatCurrency(averageTicketCents)} detail="Por linha ativa" tone="accent" />
+            <MetricPanel icon={<AlertTriangle className="h-5 w-5" />} label="Alertas" value={String(attentionCount)} detail="Tempo em atencao" tone={attentionCount > 0 ? "warning" : "success"} />
+          </section>
+
+          <section className="mb-4 grid grid-cols-[1fr_280px_280px_160px] gap-3 rounded-lg border border-panel bg-panel p-4 shadow-panel">
+            <label className="space-y-1 text-sm font-black text-muted">
+              Responsavel
+              <input value={guardianName} onChange={(event) => setGuardianName(event.target.value)} className="h-11 w-full rounded-md border border-panel-strong bg-input px-3 text-app outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/30" />
+            </label>
+            <label className="space-y-1 text-sm font-black text-muted">
+              Crianca
+              <input value={childName} onChange={(event) => setChildName(event.target.value)} className="h-11 w-full rounded-md border border-panel-strong bg-input px-3 text-app outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/30" />
+            </label>
+            <label className="space-y-1 text-sm font-black text-muted">
+              Brinquedo ou carrinho
+              <select value={assetId} onChange={(event) => setAssetId(event.target.value)} className="h-11 w-full rounded-md border border-panel-strong bg-input px-3 text-app outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/30">
+                {playAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.label}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={addSession} className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-4 font-black text-accent-contrast shadow-control transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-accent/30">
+              <UserPlus className="h-5 w-5" />
+              Iniciar
+            </button>
+          </section>
+
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-md border border-danger/50 bg-danger/10 px-4 py-3 text-sm font-black text-danger">
+              <AlertTriangle className="h-5 w-5" />
+              {error}
+            </div>
+          )}
+
+          <section className="grid grid-cols-[minmax(0,1fr)_330px] gap-4">
+            <div className="space-y-3">
+              <div className="grid grid-cols-[1.2fr_1fr_150px_150px_130px_220px] gap-3 rounded-md border border-panel-strong bg-panel-soft px-4 py-3 text-xs font-black uppercase text-muted">
+                <span>Responsavel / crianca</span>
+                <span>Brinquedo</span>
+                <span>Cronometro</span>
+                <span>Status</span>
+                <span>Total</span>
+                <span>Acoes</span>
+              </div>
+              {sessionLines.map((line) => {
+                const asset = findAsset(line.assetId);
+                const snapshot = snapshots.get(line.id)!;
+                const addOnsTotal = line.addOns.reduce((sum, addOn) => sum + addOn.totalCents, 0);
+                return (
+                  <SessionRow
+                    key={line.id}
+                    line={line}
+                    asset={asset}
+                    snapshot={snapshot}
+                    totalCents={snapshot.totalTimeCents + addOnsTotal}
+                    onAddAsset={addAssetToLine}
+                    onAddCrossSell={addCrossSell}
+                    onRemove={removeLine}
+                  />
+                );
+              })}
+            </div>
+
+            <aside className="space-y-4">
+              <section className="rounded-lg border border-panel bg-panel p-4 shadow-panel">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase text-muted">Produtos</p>
+                    <h2 className="text-lg font-black">Estoque rapido</h2>
+                  </div>
+                  <ShoppingBasket className="h-5 w-5 text-accent" />
+                </div>
+                <div className="space-y-3">
+                  {crossSellProducts.map((product) => <StockBar key={product.itemId} product={product} />)}
+                </div>
+              </section>
+
+              <section className="rounded-lg border border-panel bg-panel p-4 shadow-panel">
+                <div className="mb-3 flex items-center gap-2 font-black">
+                  <ChartNoAxesColumn className="h-5 w-5 text-accent" />
+                  Desempenho
+                </div>
+                <MiniBarChart />
+              </section>
+
+              <section className="rounded-lg border border-panel bg-panel p-4 shadow-panel">
+                <div className="mb-3 flex items-center gap-2 font-black">
+                  <ShoppingBasket className="h-5 w-5 text-accent" />
+                  Ledger de venda cruzada
+                </div>
+                <div className="space-y-2 text-sm text-muted">
+                  {ledgerEvents.length === 0 ? <p>Nenhuma baixa registrada nesta sessao.</p> : ledgerEvents.map((event) => <p key={event} className="rounded-md bg-input p-2">{event}</p>)}
+                </div>
+              </section>
+            </aside>
+          </section>
+        </section>
+      </div>
     </main>
+  );
+}
+
+function SidebarNavItem(props: { icon: ReactNode; label: string; active?: boolean }) {
+  return (
+    <div className={`flex h-10 items-center gap-3 rounded-md px-3 ${props.active ? "bg-white/10 text-white" : "text-slate-300"}`}>
+      {props.icon}
+      {props.label}
+    </div>
   );
 }
 
@@ -275,7 +341,7 @@ function SessionRow(props: {
   onRemove: (lineId: string) => void;
 }) {
   return (
-    <div className={`grid min-h-24 grid-cols-[1.2fr_1fr_150px_150px_130px_220px] items-center gap-3 rounded-lg border bg-panel px-3 py-3 shadow-panel ${statusBorder(props.snapshot.status)}`}>
+    <div className={`grid min-h-24 grid-cols-[1.2fr_1fr_150px_150px_130px_220px] items-center gap-3 rounded-lg border bg-panel px-4 py-3 shadow-panel ${statusBorder(props.snapshot.status)}`}>
       <div>
         <p className="text-base font-black">{props.line.childName}</p>
         <p className="text-sm text-muted">{props.line.guardianName}</p>
@@ -296,7 +362,7 @@ function SessionRow(props: {
       <div className="grid grid-cols-2 gap-2">
         <MenuButton icon={<Plus className="h-4 w-4" />} label="Brinquedo" options={playAssets.filter((asset) => asset.id !== props.asset.id).map((asset) => ({ id: asset.id, label: asset.label }))} onSelect={(id) => props.onAddAsset(props.line.id, id)} />
         <MenuButton icon={<PackagePlus className="h-4 w-4" />} label="Produto" options={crossSellProducts.map((item) => ({ id: item.itemId, label: item.label }))} onSelect={(id) => void props.onAddCrossSell(props.line.id, id)} />
-        <button type="button" className="col-span-2 inline-flex h-9 items-center justify-center gap-2 rounded-md border border-panel-strong bg-input px-3 text-sm font-bold" onClick={() => props.onRemove(props.line.id)}>
+        <button type="button" className="col-span-2 inline-flex h-9 items-center justify-center gap-2 rounded-md border border-panel-strong bg-input px-3 text-sm font-bold transition hover:border-accent focus:outline-none focus:ring-4 focus:ring-accent/30" onClick={() => props.onRemove(props.line.id)}>
           <TimerReset className="h-4 w-4" />
           Encerrar linha
         </button>
@@ -309,7 +375,7 @@ function MenuButton(props: { icon: ReactNode; label: string; options: Array<{ id
   return (
     <div className="relative">
       <span className="pointer-events-none absolute left-2 top-2.5 text-accent">{props.icon}</span>
-      <select aria-label={props.label} className="h-9 w-full rounded-md border border-panel-strong bg-input px-8 text-sm font-bold text-app" onChange={(event) => { if (event.target.value) props.onSelect(event.target.value); event.currentTarget.value = ""; }} defaultValue="">
+      <select aria-label={props.label} className="h-9 w-full rounded-md border border-panel-strong bg-input px-8 text-sm font-bold text-app outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/30" onChange={(event) => { if (event.target.value) props.onSelect(event.target.value); event.currentTarget.value = ""; }} defaultValue="">
         <option value="">{props.label}</option>
         {props.options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
       </select>
@@ -317,11 +383,52 @@ function MenuButton(props: { icon: ReactNode; label: string; options: Array<{ id
   );
 }
 
-function MetricPanel(props: { icon: ReactNode; label: string; value: string }) {
+function MetricPanel(props: { icon: ReactNode; label: string; value: string; detail: string; tone: "accent" | "success" | "warning" }) {
+  const toneClass = props.tone === "success"
+    ? "border-success/40 bg-success/10 text-success"
+    : props.tone === "warning"
+      ? "border-warning/50 bg-warning/10 text-warning"
+      : "border-accent/40 bg-accent/10 text-accent";
+
   return (
     <div className="rounded-lg border border-panel bg-panel p-4 shadow-panel">
-      <div className="flex items-center gap-2 text-sm font-bold text-muted">{props.icon}{props.label}</div>
-      <p className="mt-2 text-3xl font-black">{props.value}</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-sm font-black text-muted">{props.label}</div>
+        <div className={`grid h-9 w-9 place-items-center rounded-md border ${toneClass}`}>{props.icon}</div>
+      </div>
+      <p className="mt-3 text-3xl font-black">{props.value}</p>
+      <p className="mt-1 text-sm text-muted">{props.detail}</p>
+    </div>
+  );
+}
+
+function StockBar(props: { product: CrossSellProduct }) {
+  const stockPercent = Math.min(100, Math.round((props.product.stockBaseUnits / 60) * 100));
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between gap-2 text-sm">
+        <span className="font-bold">{props.product.label}</span>
+        <span className="text-muted">{props.product.stockBaseUnits} un.</span>
+      </div>
+      <div className="h-2 rounded-full bg-input">
+        <div className="h-2 rounded-full bg-accent" style={{ width: `${stockPercent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function MiniBarChart() {
+  return (
+    <div className="flex h-32 items-end gap-2 border-b border-panel-strong px-1 pt-4">
+      {performanceBars.map((height, index) => (
+        <div
+          key={`${height}-${index}`}
+          className={`w-full rounded-t-md ${index % 3 === 1 ? "chart-fill-success" : index % 3 === 2 ? "chart-fill-warning" : "chart-fill-primary"}`}
+          style={{ height: `${height}%` }}
+          title={`Indicador ${index + 1}`}
+        />
+      ))}
     </div>
   );
 }
@@ -410,6 +517,6 @@ function statusBorder(status: PlaySessionPricingSnapshot["status"]): string {
 
 function statusLabel(snapshot: PlaySessionPricingSnapshot): string {
   if (snapshot.status === "overtime") return "Tempo estourado";
-  if (snapshot.status === "warning") return "Atenção ao tempo";
+  if (snapshot.status === "warning") return "Atencao ao tempo";
   return "Em andamento";
 }
