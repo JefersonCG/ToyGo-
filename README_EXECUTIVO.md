@@ -1,27 +1,28 @@
 # ToyGo! - README executivo
 
-Data de referência: 20 de maio de 2026
+Data de referência: 22 de maio de 2026
 
 ## 1. Resumo executivo
 
 O ToyGo! já saiu da fase de ideia e entrou em fase de produto estruturado. O projeto possui uma fundação técnica real, versionada, enviada ao GitHub e organizada como monorepo TypeScript com separação clara entre Desktop, Central Web e pacotes internos.
 
-O foco estratégico definido até aqui é construir um ecossistema privado e proprietário para gestão de parquinhos indoor, com operação local offline-first, banco MariaDB instalado junto ao Desktop, ledger imutável para estoque e financeiro, licenciamento privado e evolução futura para módulos como fiscal, booking, LGPD, hardware, BI e multiunidade.
+O foco estratégico definido até aqui é construir um ecossistema privado e proprietário para gestão de parquinhos indoor, com operação local offline-first, banco MariaDB instalado junto ao Desktop, ledger imutável para estoque e financeiro, licenciamento privado e módulo fiscal brasileiro obrigatório com NFC-e, SEFAZ, contingência, editor de cupom e impressão térmica.
 
-O projeto ainda não está pronto para uso em produção por cliente final. Ele está em estágio de fundação técnica e primeira superfície operacional. A base arquitetural está bem posicionada, mas ainda faltam persistência real da operação no MariaDB, fechamento de conta, caixa, fiscal, instalador, autenticação completa, integrações reais e hardening de produção.
+O projeto ainda não está pronto para uso em produção por cliente final. Ele está em estágio de fundação técnica e primeira superfície operacional. A base arquitetural está bem posicionada, mas ainda faltam persistência real da operação no MariaDB, fechamento de conta, caixa, fiscal completo, instalador, autenticação completa, integrações reais e hardening de produção.
 
 ## 2. Estado geral atual
 
 Status atual: Etapa 1 e Etapa 2 entregues.
 
-Último estado enviado ao remoto:
+Estado enviado ao remoto até o último fechamento documentado:
 
 - Branch: `master`.
 - Remoto: `origin/master` em `https://github.com/JefersonCG/ToyGo-.git`.
-- Últimos marcos relevantes:
-  - `560f5f2` - Ajuste final de lockfile e typecheck antes do push.
-  - `93213e3` - Entrega do painel operacional da Etapa 2.
-  - `8cb0fb1` - Definição do MariaDB como banco local oficial do Desktop.
+- Marcos relevantes:
+  - Etapa 1 entregue: fundação do monorepo, Desktop, Central Web, licenciamento e MariaDB local.
+  - Etapa 2 entregue: painel operacional com cronômetros, venda cruzada e schema de sessões.
+  - README executivo criado e enviado ao remoto.
+  - Módulo fiscal obrigatório incorporado ao roadmap de desenvolvimento.
 
 Validação técnica realizada antes do envio:
 
@@ -70,7 +71,38 @@ O core do ToyGo! não conhece fiscal, hardware, booking, LGPD, analytics, backup
 
 Impacto executivo: a arquitetura evita que módulos futuros contaminem a regra central de estoque, financeiro e operação.
 
-### 3.6 SQLite não adotado como banco operacional secundário
+### 3.6 Módulo fiscal brasileiro obrigatório
+
+O módulo fiscal deixou de ser apenas uma possibilidade futura e passa a ser requisito obrigatório do roadmap. O ToyGo! deve oferecer uma experiência fiscal profissional para estabelecimentos brasileiros, incluindo operação em contingência para comerciantes ainda em regularização cadastral.
+
+Escopo obrigatório registrado:
+
+- Editor de Cupom & Etiquetas em `Configurações -> Editor de Cupom & Etiquetas`.
+- Preview em tempo real de cupom térmico 58mm e 80mm.
+- Configuração SEFAZ/NFC-e em `Configurações -> Fiscal -> SEFAZ / NFC-e`.
+- Upload de certificado A1 `.pfx`, senha, CSC, série, ambiente e status de credenciamento.
+- Suporte especial para séries 900 e 901 em contingência.
+- Geração de NFC-e offline quando em contingência.
+- Impressão com aviso claro de `EMITIDO EM CONTINGÊNCIA`.
+- Armazenamento das notas para envio posterior em lote.
+- Fluxo de impressão no PDV com cupom não fiscal e NFC-e.
+- Suporte a impressoras térmicas via ESC/POS raw print.
+
+Impacto executivo: o ToyGo! precisa tratar fiscal como diferencial e obrigação de produto para o mercado brasileiro, com usabilidade forte para pequenos comerciantes.
+
+### 3.7 Stack fiscal solicitada e impacto técnico
+
+A diretriz visual solicitada para o módulo fiscal é Tauri 2.0, Svelte 5, Tailwind CSS v3.4+, shadcn/ui, dark mode predominante e ícones Lucide.
+
+O Desktop atual está implementado em Electron, Vite, React e Tailwind CSS. Portanto, antes de codificar o módulo fiscal, existe uma decisão técnica obrigatória:
+
+- Migrar o Desktop para Tauri/Svelte.
+- Criar o módulo fiscal como superfície separada em Tauri/Svelte integrada ao core ToyGo!.
+- Ou manter Electron/React e adaptar a diretriz visual, assumindo divergência da stack solicitada.
+
+Recomendação atual: registrar a stack fiscal como requisito de produto, mas decidir a estratégia técnica no início da etapa fiscal para evitar retrabalho.
+
+### 3.8 SQLite não adotado como banco operacional secundário
 
 SQLite foi avaliado conceitualmente como possível banco auxiliar, mas não foi adotado como segunda fonte operacional.
 
@@ -306,6 +338,11 @@ Ainda não está pronto para cliente final:
 - Controle de caixa.
 - Pagamento local.
 - Emissão fiscal.
+- Editor de Cupom & Etiquetas.
+- Configuração SEFAZ/NFC-e.
+- Contingência automática para séries 900/901.
+- Fila de NFC-e offline para envio posterior.
+- Impressão térmica ESC/POS.
 - Autenticação real de operador.
 - Controle de permissões.
 - Cadastro completo de produtos, responsáveis e crianças via UI.
@@ -351,13 +388,74 @@ Critério de aceite:
 
 - Abrir sessão, adicionar produto, encerrar conta e consultar tudo novamente após reiniciar o app.
 
-### 7.2 Etapa 4 - Cadastro operacional
+### 7.2 Etapa 4 - Módulo fiscal obrigatório
+
+Prioridade: muito alta.
+
+Objetivo:
+
+- Implementar o módulo fiscal brasileiro como capacidade obrigatória do produto.
+- Atender pequenos comerciantes que precisam operar com cupom não fiscal, NFC-e, SEFAZ e contingência enquanto regularizam a situação cadastral.
+- Entregar experiência visual profissional e fiel ao cupom fiscal real.
+
+Entregas esperadas:
+
+- Menu `Configurações -> Editor de Cupom & Etiquetas`.
+- Modal grande com layout dividido: formulário à esquerda e preview térmico à direita.
+- Abas de configuração: Cabeçalho, Itens, Rodapé e Avançado.
+- Preview em tempo real simulando papel 58mm e 80mm.
+- Campos de cabeçalho: nome fantasia, razão social, CNPJ, inscrição estadual, endereço, CEP, telefone e logo.
+- Botão de busca automática de CNPJ por API.
+- Autopreenchimento de endereço por CEP.
+- Configuração de colunas de item: código, descrição, quantidade, valor unitário e total.
+- Opções de largura, fonte, negrito, código de barras, lote e validade.
+- Rodapé com agradecimento, texto adicional, QR Code e chave de acesso quando for NFC-e.
+- Teste de impressão.
+- Menu `Configurações -> Fiscal -> SEFAZ / NFC-e`.
+- Upload de certificado digital A1 `.pfx` e senha.
+- Campos CSC, série, ambiente, razão social, CNPJ e inscrição estadual.
+- Toggle `Forçar Modo Contingência`.
+- Status de credenciamento: Credenciado, Pendente ou Irregular.
+- Suporte especial para séries 900 e 901.
+- Contingência automática quando a série for 900 ou 901.
+- Geração de NFC-e offline ao finalizar venda em contingência.
+- Impressão com aviso claro de `EMITIDO EM CONTINGÊNCIA`.
+- Armazenamento de notas para envio em lote posterior.
+- Saída automática de contingência quando o usuário alterar a série para 1 após regularização.
+- Alertas visíveis enquanto o sistema estiver em contingência.
+- Modal de finalização de venda com botão verde `Imprimir Cupom Não Fiscal`.
+- Modal de finalização de venda com botão azul `Emitir NFC-e`.
+- QR Code e chave de acesso na impressão NFC-e.
+- Suporte a impressoras térmicas via ESC/POS raw print.
+
+Stack UI/UX solicitada:
+
+- Tauri 2.0.
+- Svelte 5.
+- Tailwind CSS v3.4+.
+- shadcn/ui.
+- Dark mode predominante.
+- Ícones Lucide.
+- Alta usabilidade.
+
+Critério de aceite:
+
+- Usuário configura empresa, certificado, série e layout do cupom.
+- Usuário finaliza uma venda e escolhe entre cupom não fiscal e NFC-e.
+- Em série 900/901, o sistema entra em contingência, imprime aviso correto e guarda a nota para envio posterior.
+- Preview do cupom reflete as alterações em tempo real.
+- Impressão térmica funciona via ESC/POS mesmo com driver genérico.
+
+Documento técnico de referência: `docs/architecture/FISCAL_MODULE.md`.
+
+### 7.3 Etapa 5 - Cadastro operacional e fiscal mínimo
 
 Prioridade: alta.
 
 Objetivo:
 
 - Permitir que o cliente configure a operação real sem editar banco ou arquivo.
+- Preparar dados comerciais e fiscais usados pelo módulo fiscal.
 
 Entregas esperadas:
 
@@ -369,12 +467,14 @@ Entregas esperadas:
 - Cadastro de usuários/operadores.
 - Controle de unidades operacionais.
 - Estoque inicial e ajuste manual com ledger.
+- Campos fiscais por produto quando aplicável.
+- Dados fiscais da empresa usados por cupom, NFC-e e SEFAZ.
 
 Critério de aceite:
 
-- Loja consegue configurar produtos, brinquedos e preços pela interface.
+- Loja consegue configurar produtos, brinquedos, preços e parâmetros fiscais pela interface.
 
-### 7.3 Etapa 5 - Estoque completo e compras
+### 7.4 Etapa 6 - Estoque completo e compras
 
 Prioridade: alta.
 
@@ -396,7 +496,7 @@ Critério de aceite:
 
 - Comprar produto, vender na sessão, baixar estoque e visualizar saldo correto.
 
-### 7.4 Etapa 6 - Licenciamento real e Central Web
+### 7.5 Etapa 7 - Licenciamento real e Central Web
 
 Prioridade: alta.
 
@@ -419,7 +519,7 @@ Critério de aceite:
 
 - Instância Desktop ativa com Machine ID, opera offline dentro da tolerância e bloqueia quando a licença expira conforme regra definida.
 
-### 7.5 Etapa 7 - Instalador Windows e MariaDB embarcado
+### 7.6 Etapa 8 - Instalador Windows e MariaDB embarcado
 
 Prioridade: muito alta antes de produção.
 
@@ -441,26 +541,6 @@ Entregas esperadas:
 Critério de aceite:
 
 - Instalar em máquina limpa Windows e abrir o ToyGo! operacional sem instalar banco manualmente.
-
-### 7.6 Etapa 8 - Fiscal, comprovantes e compliance brasileiro
-
-Prioridade: média/alta, conforme estratégia comercial.
-
-Objetivo:
-
-- Preparar o ToyGo! para operação fiscal brasileira quando necessário.
-
-Entregas esperadas:
-
-- Porta fiscal concreta.
-- NFC-e/SAT/TEF conforme estado e perfil de cliente.
-- Comprovante de pagamento.
-- Contingência fiscal.
-- Relatórios fiscais básicos.
-
-Critério de aceite:
-
-- Uma venda pode gerar documento/comprovante conforme regra fiscal escolhida.
 
 ### 7.7 Etapa 9 - LGPD, waiver e segurança de dados
 
@@ -566,15 +646,21 @@ Mitigação: criar trilha de empacotamento Windows logo após persistência bás
 
 Risco: licenciamento comercial ainda não existe operacionalmente.
 
-Mitigação: evoluir Central na Etapa 6, depois que Desktop tiver fluxo mínimo de caixa.
+Mitigação: evoluir Central na etapa de licenciamento real, depois que Desktop tiver fluxo mínimo de caixa e persistência confiável.
 
-### 8.4 Fiscal pode mudar prioridade comercial
+### 8.4 Fiscal obrigatório ainda não implementado
 
-Risco: cliente real pode exigir fiscal antes de módulos avançados.
+Risco: cliente real no Brasil pode exigir cupom, NFC-e, contingência e impressão térmica antes de aceitar implantação comercial.
 
-Mitigação: manter fiscal como porta separada e decidir por região/perfil de cliente.
+Mitigação: tratar o módulo fiscal como etapa obrigatória logo após caixa/persistência, mantendo-o fora do core e com adapter fiscal próprio.
 
-### 8.5 Node_modules já apresentou extração parcial
+### 8.5 Stack fiscal solicitada diverge da stack atual
+
+Risco: o módulo fiscal foi especificado com Tauri 2.0 e Svelte 5, enquanto o Desktop atual está em Electron, Vite, React e Tailwind CSS.
+
+Mitigação: decidir no início da etapa fiscal entre migrar o Desktop, criar superfície fiscal separada ou adaptar a UI mantendo Electron/React.
+
+### 8.6 Node_modules já apresentou extração parcial
 
 Risco: ambiente local Windows/armazenamento pode deixar pacotes incompletos.
 
@@ -586,12 +672,12 @@ Ordem recomendada para continuar sem retrabalho:
 
 1. Persistência MariaDB do painel operacional.
 2. Fechamento de conta e caixa.
-3. Cadastro operacional mínimo.
-4. Estoque completo de bomboniere.
-5. Instalador Windows com MariaDB local.
-6. Licenciamento real no Central.
-7. Backup/restore.
-8. Fiscal e comprovantes.
+3. Módulo fiscal obrigatório: cupom, NFC-e, SEFAZ, contingência 900/901 e ESC/POS.
+4. Cadastro operacional e fiscal mínimo.
+5. Estoque completo de bomboniere.
+6. Instalador Windows com MariaDB local.
+7. Licenciamento real no Central.
+8. Backup/restore.
 9. LGPD/waiver.
 10. BI, booking, membership e hardware.
 
@@ -612,6 +698,11 @@ O ToyGo! pode ser considerado MVP operacional quando cumprir estes pontos:
 - Registra pagamento.
 - Baixa estoque.
 - Registra ledger financeiro.
+- Configura cupom e dados fiscais da empresa.
+- Emite cupom não fiscal quando necessário.
+- Emite ou prepara NFC-e conforme ambiente e credenciamento.
+- Opera contingência 900/901 com aviso claro e fila de envio posterior.
+- Imprime em térmica via ESC/POS.
 - Mostra histórico.
 - Faz backup local.
 - Restaura backup em teste.
@@ -622,6 +713,6 @@ O ToyGo! pode ser considerado MVP operacional quando cumprir estes pontos:
 
 O ToyGo! está bem encaminhado tecnicamente. As decisões mais importantes já foram tomadas: produto proprietário, Desktop offline-first, MariaDB local, arquitetura modular, ledger imutável e separação entre core e módulos periféricos.
 
-O que existe hoje é uma base consistente e uma primeira tela operacional. O próximo salto importante é transformar a demonstração operacional em fluxo real persistido, com fechamento de conta e caixa. Esse é o ponto que separa protótipo técnico de produto operacional.
+O que existe hoje é uma base consistente e uma primeira tela operacional. O próximo salto importante é transformar a demonstração operacional em fluxo real persistido, com fechamento de conta e caixa. Logo depois, o módulo fiscal obrigatório precisa entrar como prioridade de produto brasileiro, cobrindo cupom, NFC-e, SEFAZ, contingência e impressão térmica.
 
-Recomendação final: continuar pela Etapa 3, sem abrir módulos avançados antes de fechar persistência, caixa e ciclo financeiro local.
+Recomendação final: continuar pela Etapa 3 e preparar a Etapa 4 fiscal como entrega obrigatória, sem abrir módulos avançados antes de fechar persistência, caixa, ciclo financeiro local e a trilha fiscal brasileira.

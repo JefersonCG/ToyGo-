@@ -21,6 +21,12 @@ Para visão executiva do que já foi concluído, pendências, riscos e roadmap, 
 - Venda cruzada de bomboniere passando pelo `InventoryEngine` e refletindo no ledger financeiro pela camada `application`.
 - Schema MariaDB preparado para responsáveis, crianças, ativos de recreação, sessões e linhas de cobrança.
 
+## Módulo fiscal obrigatório no roadmap
+
+O ToyGo! passa a tratar o módulo fiscal brasileiro como entrega obrigatória de produto, não apenas como integração futura. A especificação executiva inclui Editor de Cupom & Etiquetas, configuração SEFAZ/NFC-e, contingência automática para séries 900/901, emissão offline, fila de envio posterior e impressão térmica ESC/POS.
+
+Detalhes do escopo fiscal estão em `docs/architecture/FISCAL_MODULE.md` e no roadmap executivo em `README_EXECUTIVO.md`.
+
 ## Estrutura
 
 ```text
