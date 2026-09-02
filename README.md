@@ -53,3 +53,7 @@ Para preparar o MySQL local do Desktop:
 `StockMovement` e `FinanceLedgerEntry` são append-only. Toda alteração operacional relevante cria um novo lançamento e os saldos (`StockBalance`) são read-models derivados, nunca a fonte da verdade.
 
 O core não conhece fiscal, hardware, booking, LGPD, analytics, backup nem licenciamento. Esses pontos entram por portas e adapters, documentados em `docs/architecture/MODULE_BOUNDARIES.md`.
+
+## Central Multisistemas
+
+O alinhamento entre o ToyGo! e o MultiPlus+ deve seguir [`CENTRAL_MULTISISTEMAS.md`](CENTRAL_MULTISISTEMAS.md). A proposta compartilha identidade, licenciamento, auditoria, telemetria, releases e suporte, mas preserva o domínio de parques e a operação offline-first do ToyGo! em um adaptador próprio.
