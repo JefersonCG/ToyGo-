@@ -10,7 +10,9 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@toygo/application": "0.1.0",
     "@toygo/database": "0.1.0",
+    "@toygo/domain": "0.1.0",
     "@toygo/licensing": "0.1.0",
     "@toygo/ui-skins": "0.1.0",
     "@vitejs/plugin-react": "^4.2.1",

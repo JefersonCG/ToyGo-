@@ -9,6 +9,8 @@ A elaboração está tecnicamente forte porque separa o produto em dois domínio
 
 O ponto mais importante é manter o Desktop offline-first. Por isso, a comunicação com o Central fica deliberadamente pequena: Machine ID, ativação, bloqueio e cobrança. Isso evita que uma queda de internet pare a loja.
 
+Outro requisito primordial é que o MariaDB local acompanhe o instalador do Desktop. O cliente não deve depender de uma instalação manual prévia feita por técnico para operar o ToyGo!.
+
 ## Decisão arquitetural
 
 O modelo GALINT foi adaptado assim:
@@ -20,6 +22,12 @@ O modelo GALINT foi adaptado assim:
 - `PriceNormalization` normaliza valores por unidade base.
 - `UnitConversionEngine` impede divergência entre embalagem, unidade, dose, kit e consumo real.
 - `BackupService` fica fora do core, no pacote `@toygo/backup`, porque backup é infraestrutura.
+
+## Banco local empacotado
+
+A decisão oficial do ToyGo! Desktop é MariaDB local. O instalador final deve instalar, inicializar ou reaproveitar uma instância local controlada pelo ToyGo! Desktop.
+
+O projeto mantém nomes internos e driver compatíveis com o protocolo MySQL (`mysql2`) porque MariaDB usa esse protocolo. PostgreSQL 16.11 fica descartado como banco local do Desktop nesta linha arquitetural.
 
 ## Separação de módulos
 

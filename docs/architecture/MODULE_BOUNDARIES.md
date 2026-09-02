@@ -26,7 +26,7 @@ Essa camada pode chamar domínio, mas o domínio não chama a aplicação.
 
 Define portas para módulos futuros sem implementação concreta:
 
-- Fiscal: NFC-e, SAT e TEF.
+- Fiscal: SEFAZ, NFC-e, SAT, TEF, contingência 900/901, editor de cupom, QR Code, chave de acesso, ESC/POS e fila de envio posterior.
 - Hardware: RFID, NFC, QR Code e catracas.
 - Booking: reservas e festas.
 - LGPD: waiver e consentimento.

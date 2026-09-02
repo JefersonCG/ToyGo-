@@ -10,10 +10,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not (Get-Command mysql -ErrorAction SilentlyContinue)) {
-  throw "MySQL 8.0+ nao encontrado no PATH. Instale o MySQL local antes de executar este script."
+  throw "Cliente MariaDB/MySQL nao encontrado no PATH. O instalador final do ToyGo! deve provisionar MariaDB local automaticamente."
 }
 
-Write-Host "Criando banco local $Database e usuario $AppUser..."
+Write-Host "Criando banco MariaDB local $Database e usuario $AppUser..."
 
 $bootstrapSql = @"
 CREATE DATABASE IF NOT EXISTS $Database CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
@@ -25,4 +25,4 @@ FLUSH PRIVILEGES;
 $bootstrapSql | mysql -uroot -p$RootPassword
 Get-Content -Raw $SchemaPath | mysql -uroot -p$RootPassword $Database
 
-Write-Host "MySQL local do ToyGo! preparado com sucesso."
+Write-Host "MariaDB local do ToyGo! preparado com sucesso."

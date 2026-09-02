@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS toygo_desktop CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE IF NOT EXISTS toygo_desktop CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE toygo_desktop;
 
 CREATE TABLE IF NOT EXISTS tenants (
@@ -31,6 +31,31 @@ CREATE TABLE IF NOT EXISTS users (
   CONSTRAINT fk_users_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
 );
 
+CREATE TABLE IF NOT EXISTS guardians (
+  id CHAR(36) PRIMARY KEY,
+  tenant_id CHAR(36) NOT NULL,
+  full_name VARCHAR(160) NOT NULL,
+  document_number VARCHAR(32),
+  phone VARCHAR(32),
+  email VARCHAR(180),
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  KEY ix_guardians_lookup (tenant_id, full_name, document_number),
+  CONSTRAINT fk_guardians_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+);
+
+CREATE TABLE IF NOT EXISTS children (
+  id CHAR(36) PRIMARY KEY,
+  tenant_id CHAR(36) NOT NULL,
+  guardian_id CHAR(36) NOT NULL,
+  full_name VARCHAR(160) NOT NULL,
+  birth_date DATE,
+  notes VARCHAR(500),
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  KEY ix_children_guardian (tenant_id, guardian_id, full_name),
+  CONSTRAINT fk_children_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_children_guardian FOREIGN KEY (guardian_id) REFERENCES guardians(id)
+);
+
 CREATE TABLE IF NOT EXISTS items (
   id CHAR(36) PRIMARY KEY,
   tenant_id CHAR(36) NOT NULL,
@@ -53,6 +78,52 @@ CREATE TABLE IF NOT EXISTS unit_conversions (
   UNIQUE KEY uq_unit_conversions (item_id, from_unit),
   CONSTRAINT fk_unit_conversions_item FOREIGN KEY (item_id) REFERENCES items(id),
   CONSTRAINT chk_unit_factor_positive CHECK (factor_to_base > 0)
+);
+
+CREATE TABLE IF NOT EXISTS play_assets (
+  id CHAR(36) PRIMARY KEY,
+  tenant_id CHAR(36) NOT NULL,
+  operational_unit_id CHAR(36) NOT NULL,
+  code VARCHAR(64) NOT NULL,
+  name VARCHAR(140) NOT NULL,
+  asset_type ENUM('stay','cart','toy') NOT NULL,
+  included_minutes INT NOT NULL,
+  base_price_cents BIGINT NOT NULL,
+  extra_minute_cents BIGINT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  UNIQUE KEY uq_play_assets_code (tenant_id, operational_unit_id, code),
+  CONSTRAINT fk_play_assets_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_play_assets_unit FOREIGN KEY (operational_unit_id) REFERENCES operational_units(id),
+  CONSTRAINT chk_play_asset_minutes CHECK (included_minutes > 0),
+  CONSTRAINT chk_play_asset_base_price CHECK (base_price_cents >= 0),
+  CONSTRAINT chk_play_asset_extra_price CHECK (extra_minute_cents >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS play_sessions (
+  id CHAR(40) PRIMARY KEY,
+  tenant_id CHAR(36) NOT NULL,
+  operational_unit_id CHAR(36) NOT NULL,
+  guardian_id CHAR(36) NOT NULL,
+  child_id CHAR(36) NOT NULL,
+  primary_asset_id CHAR(36) NOT NULL,
+  status ENUM('active','closed','cancelled') NOT NULL DEFAULT 'active',
+  started_at DATETIME(6) NOT NULL,
+  planned_minutes INT NOT NULL,
+  base_price_cents BIGINT NOT NULL,
+  extra_minute_cents BIGINT NOT NULL,
+  alert_threshold_minutes INT NOT NULL DEFAULT 5,
+  closed_at DATETIME(6),
+  created_by_user_id CHAR(36) NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  KEY ix_play_sessions_active (tenant_id, operational_unit_id, status, started_at),
+  CONSTRAINT fk_play_sessions_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_play_sessions_unit FOREIGN KEY (operational_unit_id) REFERENCES operational_units(id),
+  CONSTRAINT fk_play_sessions_guardian FOREIGN KEY (guardian_id) REFERENCES guardians(id),
+  CONSTRAINT fk_play_sessions_child FOREIGN KEY (child_id) REFERENCES children(id),
+  CONSTRAINT fk_play_sessions_asset FOREIGN KEY (primary_asset_id) REFERENCES play_assets(id),
+  CONSTRAINT fk_play_sessions_user FOREIGN KEY (created_by_user_id) REFERENCES users(id),
+  CONSTRAINT chk_play_sessions_minutes CHECK (planned_minutes > 0)
 );
 
 CREATE TABLE IF NOT EXISTS stock_movements (
@@ -111,6 +182,32 @@ CREATE TABLE IF NOT EXISTS finance_ledger_entries (
   CONSTRAINT fk_finance_entries_unit FOREIGN KEY (operational_unit_id) REFERENCES operational_units(id),
   CONSTRAINT fk_finance_entries_user FOREIGN KEY (created_by_user_id) REFERENCES users(id),
   CONSTRAINT chk_finance_amount_positive CHECK (amount_cents >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS play_session_lines (
+  id CHAR(40) PRIMARY KEY,
+  tenant_id CHAR(36) NOT NULL,
+  play_session_id CHAR(40) NOT NULL,
+  line_type ENUM('time','asset','product') NOT NULL,
+  item_id CHAR(36),
+  asset_id CHAR(36),
+  description VARCHAR(180) NOT NULL,
+  quantity DECIMAL(18,6) NOT NULL,
+  unit_price_cents BIGINT NOT NULL,
+  total_cents BIGINT NOT NULL,
+  stock_movement_id CHAR(40),
+  finance_entry_id CHAR(40),
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  KEY ix_play_session_lines_session (play_session_id, created_at),
+  CONSTRAINT fk_play_session_lines_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
+  CONSTRAINT fk_play_session_lines_session FOREIGN KEY (play_session_id) REFERENCES play_sessions(id),
+  CONSTRAINT fk_play_session_lines_item FOREIGN KEY (item_id) REFERENCES items(id),
+  CONSTRAINT fk_play_session_lines_asset FOREIGN KEY (asset_id) REFERENCES play_assets(id),
+  CONSTRAINT fk_play_session_lines_stock FOREIGN KEY (stock_movement_id) REFERENCES stock_movements(id),
+  CONSTRAINT fk_play_session_lines_finance FOREIGN KEY (finance_entry_id) REFERENCES finance_ledger_entries(id),
+  CONSTRAINT chk_play_session_lines_quantity CHECK (quantity > 0),
+  CONSTRAINT chk_play_session_lines_unit_price CHECK (unit_price_cents >= 0),
+  CONSTRAINT chk_play_session_lines_total CHECK (total_cents >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS license_cache (

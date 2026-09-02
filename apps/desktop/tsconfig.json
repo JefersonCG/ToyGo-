@@ -9,6 +9,8 @@
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   "references": [
+    { "path": "../../packages/application" },
+    { "path": "../../packages/domain" },
     { "path": "../../packages/ui-skins" }
   ]
 }

@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ToygoRuntimeStatus {
+  mariadb: { ok: boolean; message: string };
   mysql: { ok: boolean; message: string };
   license: {
     machineId: string;

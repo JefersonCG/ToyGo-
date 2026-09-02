@@ -2,14 +2,30 @@
 
 Ecossistema híbrido para gestão de parquinhos indoor, inspirado no modelo GALINT de ledger imutável, estoque transacional e rastreabilidade financeira.
 
+Para visão executiva do que já foi concluído, pendências, riscos e roadmap, consulte `README_EXECUTIVO.md`.
+
 ## Etapa 1 entregue
 
 - Monorepo com Desktop, Sistema Central e pacotes compartilhados.
 - Desktop offline-first em Electron + Vite + React + Tailwind CSS v3.
-- MySQL 8.0+ local preparado para instalação junto ao executável.
+- MariaDB local preparado para instalação/provisionamento junto ao executável do Desktop.
 - Core transacional separado de módulos periféricos: domínio, aplicação, portas de integração, backup, banco, licenciamento e UI.
 - Motor de licenciamento híbrido com comunicação restrita a Machine ID, ativação, bloqueio e PIX/Boleto.
-- Tela de login moderna com skins `dark`, `cyberpunk` e `light`, status da licença e indicador MySQL.
+- Tela de login moderna com skins `dark`, `cyberpunk` e `light`, status da licença e indicador MariaDB.
+
+## Etapa 2 entregue
+
+- Painel operacional do Desktop com linhas horizontais dinâmicas.
+- Cronômetros em tempo real com alerta visual de tempo próximo e tempo estourado.
+- Adição de brinquedos/carrinhos na linha da criança.
+- Venda cruzada de bomboniere passando pelo `InventoryEngine` e refletindo no ledger financeiro pela camada `application`.
+- Schema MariaDB preparado para responsáveis, crianças, ativos de recreação, sessões e linhas de cobrança.
+
+## Módulo fiscal obrigatório no roadmap
+
+O ToyGo! passa a tratar o módulo fiscal brasileiro como entrega obrigatória de produto, não apenas como integração futura. A especificação executiva inclui Editor de Cupom & Etiquetas, configuração SEFAZ/NFC-e, contingência automática para séries 900/901, emissão offline, fila de envio posterior e impressão térmica ESC/POS.
+
+Detalhes do escopo fiscal estão em `docs/architecture/FISCAL_MODULE.md` e no roadmap executivo em `README_EXECUTIVO.md`.
 
 ## Estrutura
 
@@ -26,7 +42,7 @@ packages/
   licensing/     Ativação, cache local e verificação de bloqueio
   ui-skins/      Tokens visuais compartilhados
 infra/
-  mysql/desktop/ Configuração MySQL local essencial do executável
+  mysql/desktop/ Configuração MariaDB local essencial do executável, usando protocolo MySQL
   mysql/modules/ Schemas modulares opcionais por capacidade futura
 scripts/
   mysql/         Automação de preparação do banco local
@@ -42,11 +58,19 @@ npm run typecheck
 npm run dev:desktop
 ```
 
-Para preparar o MySQL local do Desktop:
+Para preparar o MariaDB local do Desktop durante desenvolvimento:
 
 ```powershell
 ./scripts/mysql/init-local-desktop.ps1 -RootPassword "sua-senha-root"
 ```
+
+## Banco local do Desktop
+
+O instalador do ToyGo! Desktop deve provisionar o MariaDB local junto com o executável. Isso é requisito primordial para o modo 100% offline.
+
+A decisão oficial do ToyGo! Desktop é **MariaDB local**. O projeto ainda usa o driver `mysql2` e variáveis legadas `TOYGO_DESKTOP_MYSQL_*` como compatibilidade de protocolo, mas as novas configurações devem usar `TOYGO_DESKTOP_MARIADB_*`.
+
+Detalhes da decisão estão em `docs/architecture/DESKTOP_DATABASE_INSTALLER.md`.
 
 ## Regra arquitetural central
 
@@ -57,3 +81,9 @@ O core não conhece fiscal, hardware, booking, LGPD, analytics, backup nem licen
 ## Central Multisistemas
 
 O alinhamento entre o ToyGo! e o MultiPlus+ deve seguir [`CENTRAL_MULTISISTEMAS.md`](CENTRAL_MULTISISTEMAS.md). A proposta compartilha identidade, licenciamento, auditoria, telemetria, releases e suporte, mas preserva o domínio de parques e a operação offline-first do ToyGo! em um adaptador próprio.
+
+## Licença proprietária
+
+ToyGo! é um projeto privado e proprietário de Jeferson dos Santos Paula. O código-fonte, a arquitetura, os módulos e os artefatos deste repositório não são distribuídos como software open source e não concedem permissão pública de uso, cópia, modificação ou redistribuição.
+
+A venda, o licenciamento, a implantação comercial e a distribuição do ToyGo! são direitos exclusivos de Jeferson dos Santos Paula. Qualquer acesso ao código não representa autorização para revenda, sublicenciamento, publicação, distribuição ou uso comercial por terceiros.
