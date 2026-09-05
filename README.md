@@ -80,7 +80,7 @@ O core não conhece fiscal, hardware, booking, LGPD, analytics, backup nem licen
 
 ## Central Multisistemas
 
-O alinhamento entre o ToyGo! e o MultiPlus+ deve seguir [`CENTRAL_MULTISISTEMAS.md`](CENTRAL_MULTISISTEMAS.md). A proposta compartilha identidade, licenciamento, auditoria, telemetria, releases e suporte, mas preserva o domínio de parques e a operação offline-first do ToyGo! em um adaptador próprio.
+O contrato local de conexão está em [`CENTRAL_MULTISISTEMAS.md`](CENTRAL_MULTISISTEMAS.md). A arquitetura, as fases, o roadmap e os contratos compartilhados pertencem ao repositório independente [Central MultiSistemas](https://github.com/JefersonCG/CENTRAL-MULTISISTEMA). O ToyGo! preserva o domínio de parques e a operação offline-first em um adaptador próprio.
 
 ## Licença proprietária
 
