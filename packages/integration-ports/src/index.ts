@@ -5,3 +5,4 @@ export * from "./hardware/access-control-port";
 export * from "./lgpd/waiver-port";
 export * from "./membership/membership-port";
 export * from "./payments/billing-port";
+export * from "./platform/product-registry";
