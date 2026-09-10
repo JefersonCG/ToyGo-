@@ -23,9 +23,13 @@ Para visão executiva do que já foi concluído, pendências, riscos e roadmap, 
 
 ## Módulo fiscal obrigatório no roadmap
 
-O ToyGo! passa a tratar o módulo fiscal brasileiro como entrega obrigatória de produto, não apenas como integração futura. A especificação executiva inclui Editor de Cupom & Etiquetas, configuração SEFAZ/NFC-e, contingência automática para séries 900/901, emissão offline, fila de envio posterior e impressão térmica ESC/POS.
+O ToyGo! passa a tratar o módulo fiscal brasileiro como entrega obrigatória de produto, não apenas como integração futura. A especificação executiva inclui Editor de Cupom & Etiquetas, configuração SEFAZ/NFC-e (certificado A1 ou A3), FCP por NCM, disclosure de tributos aproximados (Lei 12.741/2012), contingência automática para séries 900/901 com prazo legal de retransmissão e retenção manual do gerente (MOC 7.0), emissão offline, fila de envio posterior e impressão térmica ESC/POS. É o mesmo conjunto de correções já validado em produção no MultiPlus+, registrado aqui como requisito antes de existir código fiscal no ToyGo!.
 
-Detalhes do escopo fiscal estão em `docs/architecture/FISCAL_MODULE.md` e no roadmap executivo em `README_EXECUTIVO.md`.
+Detalhes do escopo fiscal estão em `docs/architecture/FISCAL_MODULE.md` e no roadmap executivo em `README_EXECUTIVO.md`. A arquitetura para evoluir de backend único (hoje) para um backend compartilhado por unidade quando houver múltiplos terminais está em `docs/architecture/MODULE_BOUNDARIES.md`.
+
+## Instalador e preflight do host (O_Batedor)
+
+O instalador do ToyGo! Desktop precisa da mesma camada de preflight/baseline já validada em produção no MultiPlus+ (`O_Batedor`): discovery do ambiente, baseline controlado do host e handoff auditável para suporte, sem enfraquecer Defender, UAC, Firewall global ou Windows Update. Ainda não existe código do Batedor no ToyGo!; o requisito e a decisão pendente (script compartilhado com o MultiPlus+ vs. fork dedicado) estão em `docs/architecture/O_BATEDOR.md`.
 
 ## Estrutura
 

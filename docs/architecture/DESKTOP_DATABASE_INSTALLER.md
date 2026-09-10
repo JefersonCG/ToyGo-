@@ -45,3 +45,7 @@ O instalador do Desktop deve:
 - Executar backup antes de upgrades.
 - Bloquear downgrade destrutivo de schema.
 - Permitir operação offline mesmo se a verificação de licença estiver indisponível dentro do período de tolerância.
+
+## Preflight e baseline do host (O_Batedor)
+
+Antes de provisionar o MariaDB local, o instalador precisa de uma camada de preflight que faça discovery do ambiente (CPU, memória, domínio/AD, Defender, Firewall), aplique um baseline controlado (pasta do produto, regras de firewall nomeadas para a porta do banco e da API local) e gere um handoff auditável para o próprio instalador e para o suporte. Essa camada é o `O_Batedor`, já validado em produção no MultiPlus+ e registrado como requisito do ToyGo! em `docs/architecture/O_BATEDOR.md`. O instalador do Desktop não deve reimplementar essa lógica: deve consumir o handoff (JSON + TXT) que o Batedor produz.

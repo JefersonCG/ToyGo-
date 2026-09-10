@@ -80,13 +80,17 @@ Escopo obrigatório registrado:
 - Editor de Cupom & Etiquetas em `Configurações -> Editor de Cupom & Etiquetas`.
 - Preview em tempo real de cupom térmico 58mm e 80mm.
 - Configuração SEFAZ/NFC-e em `Configurações -> Fiscal -> SEFAZ / NFC-e`.
-- Upload de certificado A1 `.pfx`, senha, CSC, série, ambiente e status de credenciamento.
+- Upload de certificado A1 `.pfx` **ou** certificado A3 via token/HSM (PKCS#11), senha/PIN, CSC, série, ambiente e status de credenciamento.
+- Matriz tributária por NCM com CFOP, origem, CSOSN, CST de PIS/COFINS, alíquota de FCP e alíquota aproximada de IBPT.
 - Suporte especial para séries 900 e 901 em contingência.
 - Geração de NFC-e offline quando em contingência.
 - Impressão com aviso claro de `EMITIDO EM CONTINGÊNCIA`.
-- Armazenamento das notas para envio posterior em lote.
+- Armazenamento das notas para envio posterior em lote, com prazo legal de retransmissão (MOC 7.0, primeiro dia útil subsequente) e retenção manual do gerente (toggle + data/hora) sobre esse envio.
+- Disclosure de tributos aproximados na NFC-e e no cupom não fiscal (Lei 12.741/2012).
 - Fluxo de impressão no PDV com cupom não fiscal e NFC-e.
 - Suporte a impressoras térmicas via ESC/POS raw print.
+
+Esse escopo (FCP por NCM, certificado A3, disclosure Lei 12.741/2012 e prazo/retenção de contingência) é o mesmo conjunto de correções de conformidade SEFAZ-RJ já implementado e testado em produção no MultiPlus+, registrado aqui como requisito de aceite da Etapa 4 antes de existir qualquer código fiscal no ToyGo!. Detalhamento completo em `docs/architecture/FISCAL_MODULE.md`.
 
 Impacto executivo: o ToyGo! precisa tratar fiscal como diferencial e obrigação de produto para o mercado brasileiro, com usabilidade forte para pequenos comerciantes.
 
@@ -384,9 +388,24 @@ Entregas esperadas:
 - Histórico da sessão encerrada.
 - Auditoria mínima do operador.
 
+Regra de arquitetura não negociável (mesmo padrão já comprovado em produção
+no MultiPlus+, `apps/pdv-server`): **o fechamento de conta/sessão nunca
+depende do módulo fiscal.** O caixa fecha, persiste e emite comprovante pelo
+fluxo transacional próprio; o documento fiscal (cupom não fiscal, NFC-e
+autorizada, NFC-e em contingência) é anexado depois, como registro
+independente, com um status próprio (equivalente ao `nao_fiscal_impresso`
+do MultiPlus+) para a venda que não emite nada. Um cliente sem CNPJ, ou que
+não ative o fiscal, precisa conseguir abrir sessão, consumir, fechar conta e
+receber comprovante sem que nenhuma configuração fiscal exista. A rota/
+serviço de fechamento de sessão não deve importar nem chamar nada de
+`integration-ports`/fiscal.
+
 Critério de aceite:
 
 - Abrir sessão, adicionar produto, encerrar conta e consultar tudo novamente após reiniciar o app.
+- Com **zero configuração fiscal cadastrada**, abrir sessão, consumir, fechar
+  conta e emitir comprovante não fiscal com sucesso — coberto por teste
+  automatizado equivalente a `test_sale_without_fiscal.py` do MultiPlus+.
 
 ### 7.2 Etapa 4 - Módulo fiscal obrigatório
 
@@ -412,15 +431,18 @@ Entregas esperadas:
 - Rodapé com agradecimento, texto adicional, QR Code e chave de acesso quando for NFC-e.
 - Teste de impressão.
 - Menu `Configurações -> Fiscal -> SEFAZ / NFC-e`.
-- Upload de certificado digital A1 `.pfx` e senha.
+- Upload de certificado digital A1 `.pfx` **ou** configuração de certificado A3 via token/HSM (PKCS#11): módulo, slot, rótulo da chave e PIN protegido.
 - Campos CSC, série, ambiente, razão social, CNPJ e inscrição estadual.
+- Tela/matriz de NCM com CFOP, origem, CSOSN, CST de PIS/COFINS, alíquota de FCP (0% a 4%) e alíquota aproximada de IBPT.
 - Toggle `Forçar Modo Contingência`.
 - Status de credenciamento: Credenciado, Pendente ou Irregular.
 - Suporte especial para séries 900 e 901.
 - Contingência automática quando a série for 900 ou 901.
 - Geração de NFC-e offline ao finalizar venda em contingência.
 - Impressão com aviso claro de `EMITIDO EM CONTINGÊNCIA`.
-- Armazenamento de notas para envio em lote posterior.
+- Armazenamento de notas para envio em lote posterior, com prazo legal de retransmissão (MOC 7.0, primeiro dia útil subsequente, feriados cadastráveis) exposto por nota e um contador de notas vencidas.
+- Toggle `Reter retransmissão manualmente` e campo `Liberar retransmissão a partir de` (data/hora), complementares ao prazo legal, sem apagar tentativas bloqueadas.
+- Disclosure de tributos aproximados (Lei 12.741/2012) na NFC-e e no cupom não fiscal.
 - Saída automática de contingência quando o usuário alterar a série para 1 após regularização.
 - Alertas visíveis enquanto o sistema estiver em contingência.
 - Modal de finalização de venda com botão verde `Imprimir Cupom Não Fiscal`.
@@ -443,10 +465,13 @@ Critério de aceite:
 - Usuário configura empresa, certificado, série e layout do cupom.
 - Usuário finaliza uma venda e escolhe entre cupom não fiscal e NFC-e.
 - Em série 900/901, o sistema entra em contingência, imprime aviso correto e guarda a nota para envio posterior.
+- FCP é calculado por NCM e refletido no total do documento, sem valor fixo.
+- Cada nota em contingência expõe seu prazo legal de retransmissão e o gerente consegue reter/liberar manualmente (toggle e data/hora) sem alterar esse prazo nem apagar tentativas bloqueadas.
+- Tributos aproximados aparecem na NFC-e e no cupom não fiscal.
 - Preview do cupom reflete as alterações em tempo real.
 - Impressão térmica funciona via ESC/POS mesmo com driver genérico.
 
-Documento técnico de referência: `docs/architecture/FISCAL_MODULE.md`.
+Documento técnico de referência: `docs/architecture/FISCAL_MODULE.md` (inclui as 4 correções de conformidade SEFAZ-RJ, já validadas em produção no MultiPlus+) e `docs/architecture/MODULE_BOUNDARIES.md` (evolução de backend único para backend compartilhado por unidade, quando houver múltiplos terminais).
 
 ### 7.3 Etapa 5 - Cadastro operacional e fiscal mínimo
 
@@ -529,6 +554,7 @@ Objetivo:
 
 Entregas esperadas:
 
+- Preflight e baseline do host via `O_Batedor` (discovery de ambiente, baseline controlado, handoff auditável JSON+TXT) — mesmo contrato de segurança já validado em produção no MultiPlus+, decisão pendente entre generalizar o script existente ou criar um fork dedicado ao ToyGo!. Detalhes em `docs/architecture/O_BATEDOR.md`.
 - Build Electron para Windows.
 - Provisionamento MariaDB local.
 - Criação de usuário técnico do banco.
@@ -541,6 +567,7 @@ Entregas esperadas:
 Critério de aceite:
 
 - Instalar em máquina limpa Windows e abrir o ToyGo! operacional sem instalar banco manualmente.
+- `O_Batedor` roda em DryRun por padrão, só muda o host com `-AllowMutation` explícito, e preserva Defender, UAC, Firewall global e Windows Update — nenhuma exceção aceita nesta etapa.
 
 ### 7.7 Etapa 9 - LGPD, waiver e segurança de dados
 
@@ -665,6 +692,18 @@ Mitigação: decidir no início da etapa fiscal entre migrar o Desktop, criar su
 Risco: ambiente local Windows/armazenamento pode deixar pacotes incompletos.
 
 Mitigação: manter validação com `npm run typecheck`, evitar confiar apenas em instalação parcial e registrar scripts de bootstrap limpos.
+
+### 8.7 Decisão pendente sobre O_Batedor compartilhado com o MultiPlus+
+
+Risco: sem decidir entre generalizar o `O_Batedor` do MultiPlus+ (script único parametrizado por produto) ou criar um fork dedicado ao ToyGo!, o instalador da Etapa 8 pode nascer duplicando o contrato de segurança já validado — com risco real de os dois scripts divergirem com o tempo (um corrigido, o outro esquecido).
+
+Mitigação: decidir isso antes de codificar o instalador da Etapa 8, não durante. Detalhes da decisão em `docs/architecture/O_BATEDOR.md`.
+
+### 8.8 Backend único hoje pode virar gargalo se a operação crescer para múltiplos terminais
+
+Risco: se uma unidade precisar de um segundo terminal (segunda catraca, segundo caixa) antes de o core estar desenhado para isso, a solução vira retrabalho estrutural em vez de uma evolução aditiva.
+
+Mitigação: já registrado em `docs/architecture/MODULE_BOUNDARIES.md` ("Servidor ToyGo!, evolução futura") — toda configuração e estado compartilhado deve passar por `packages/integration-ports`, mesmo hoje rodando in-process, para que a troca por um backend compartilhado (mesmo padrão do "Servidor PDV" do MultiPlus+) não exija reescrever `packages/domain`/`packages/application`.
 
 ## 9. Recomendação executiva de prioridade
 
