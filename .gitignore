@@ -1,0 +1,15 @@
+node_modules/
+dist/
+dist-electron/
+dist-types/
+.vite/
+.next/
+coverage/
+*.log
+*.tsbuildinfo
+*.tmp.txt
+.env
+.env.local
+local-license.json
+backup-output/
+mysql-data/

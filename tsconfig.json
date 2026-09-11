@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/domain" },
+    { "path": "packages/application" },
+    { "path": "packages/backup" },
+    { "path": "packages/database" },
+    { "path": "packages/integration-ports" },
+    { "path": "packages/licensing" },
+    { "path": "packages/ui-skins" },
+    { "path": "apps/desktop" },
+    { "path": "apps/central-web" }
+  ]
+}
