@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": ".",
+    "outDir": "../dist-electron",
+    "types": ["node", "electron"]
+  },
+  "include": ["*.ts"],
+  "references": [
+    { "path": "../../../packages/database" },
+    { "path": "../../../packages/licensing" }
+  ]
+}
