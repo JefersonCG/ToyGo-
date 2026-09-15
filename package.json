@@ -11,11 +11,13 @@
     "build": "npm run build --workspaces --if-present",
     "dev:desktop": "npm --workspace @toygo/desktop run dev",
     "dev:central": "npm --workspace @toygo/central-web run dev",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.9"
   }
 }

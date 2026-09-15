@@ -18,7 +18,7 @@
       "@toygo/backup": ["packages/backup/src/index.ts"],
       "@toygo/database": ["packages/database/src/index.ts"],
       "@toygo/integration-ports": ["packages/integration-ports/src/index.ts"],
-      "@toygo/licensing": ["packages/licensing/src/index.ts"],
+      "@toygo/central-adapter": ["packages/licensing/src/index.ts"],
       "@toygo/ui-skins": ["packages/ui-skins/src/index.ts"]
     }
   }

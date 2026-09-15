@@ -12,7 +12,7 @@ interface LoginScreenProps {
 
 export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreenProps) {
   const [runtime, setRuntime] = useState<ToygoRuntimeStatus | null>(null);
-  const [licenseKey, setLicenseKey] = useState("");
+  const [pairingCode, setPairingCode] = useState("");
   const [isActivating, setIsActivating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,16 +36,16 @@ export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreen
     }
   }
 
-  async function activateLicense() {
-    if (!licenseKey.trim()) {
-      setError("Informe uma chave de licenca para ativar este terminal.");
+  async function pairInstallation() {
+    if (!pairingCode.trim()) {
+      setError("Informe o codigo de pareamento emitido pela Central.");
       return;
     }
 
     setIsActivating(true);
     setError(null);
     try {
-      await window.toygo.activateLicense(licenseKey.trim());
+      await window.toygo.pairInstallation(pairingCode.trim());
       await refreshStatus();
     } catch (activationError) {
       setError(activationError instanceof Error ? activationError.message : "Nao foi possivel ativar a licenca.");
@@ -135,18 +135,18 @@ export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreen
                   </div>
                 </div>
 
-                <label className="block text-sm font-bold text-muted" htmlFor="license-key">Chave de licenca</label>
+                <label className="block text-sm font-bold text-muted" htmlFor="pairing-code">Codigo de pareamento</label>
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_150px] gap-3">
                   <input
-                    id="license-key"
+                    id="pairing-code"
                     className="h-12 rounded-md border border-panel-strong bg-input px-4 text-base text-app outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/30"
-                    value={licenseKey}
-                    onChange={(event) => setLicenseKey(event.target.value)}
-                    placeholder="TG-CLIENTE-UNIDADE-XXXX"
+                    value={pairingCode}
+                    onChange={(event) => setPairingCode(event.target.value)}
+                    placeholder="Codigo emitido para esta instalacao"
                   />
                   <button
                     type="button"
-                    onClick={activateLicense}
+                    onClick={pairInstallation}
                     disabled={isActivating}
                     className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-accent px-5 font-black text-accent-contrast transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-4 focus:ring-accent/30"
                   >
@@ -182,6 +182,7 @@ export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreen
                 <dl className="space-y-3 text-sm">
                   <InfoRow label="Machine ID" value={runtime?.machineId ?? "Carregando"} />
                   <InfoRow label="Versao" value={runtime?.appVersion ?? "0.1.0"} />
+                  <InfoRow label="Instalacao" value={runtime?.license.installationId ?? "Nao pareada"} />
                   <InfoRow label="Expiracao" value={runtime?.license.expiresAt ?? "Nao ativada"} />
                   <InfoRow label="Bloqueio" value={runtime?.license.blockedReason ?? "Sem bloqueio local"} />
                 </dl>
@@ -189,12 +190,6 @@ export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreen
 
               <SkinSwitcher skin={skin} onSkinChange={onSkinChange} density="roomy" />
 
-              {runtime?.license.payment && (
-                <section className="rounded-lg border border-accent/40 bg-accent/10 p-4 text-sm shadow-panel">
-                  <p className="font-black">Cobranca: {runtime.license.payment.type.toUpperCase()}</p>
-                  <p className="mt-1 text-muted">{(runtime.license.payment.amountCents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-                </section>
-              )}
             </aside>
           </div>
         </div>

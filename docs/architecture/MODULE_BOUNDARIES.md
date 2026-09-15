@@ -32,7 +32,7 @@ Define portas para módulos futuros sem implementação concreta:
 - LGPD: waiver e consentimento.
 - Membership: planos recorrentes e consumo de benefícios.
 - Analytics: publicação de eventos para o Central.
-- Payments: PIX/Boleto de licença.
+- Platform: pareamento, licenca, heartbeat, eventos, comandos e releases da Central.
 
 Adapters concretos devem ficar em `packages/adapters/*` ou dentro do app que os usa.
 
@@ -42,7 +42,9 @@ Contrato e política de backup. Não faz parte do core transacional porque backu
 
 ### `packages/licensing`
 
-Motor de licença híbrida. A comunicação continua restrita a Machine ID, ativação, bloqueio e PIX/Boleto.
+Adapter da Central. A autoridade de licenca e a Central MultiSistemas; este
+pacote guarda apenas a projecao local, a credencial opaca da instalacao e a
+chave Ed25519 protegidas no Desktop.
 
 ### `packages/database`
 

@@ -14,18 +14,18 @@ exclusivamente no repositorio
 | Fase da Central | Fase 11 - Integracao ToyGo! e expansao |
 | Estrategia | Mesmo manifesto, SDK e protocolo usados pelo MultiPlus+ |
 | Manifesto de referencia | `contracts/product-manifest/examples/toygo.json` na Central |
-| Estado | Contrato preliminar; adapter de runtime ainda nao iniciado |
+| Estado | Integrado ao contrato v1; adapter de runtime conectado ao Desktop |
 
 ## O que este repositorio implementa
 
 - Configuracao da URL e do ambiente da Central.
-- Adaptador do SDK oficial quando publicado.
-- Chave privada e credencial da instalacao em armazenamento seguro local.
+- Adaptador SDK do contrato v1 no Desktop.
+- Chave privada Ed25519 e credencial da instalacao em armazenamento seguro local.
 - Outbox e fila offline de eventos permitidos.
 - Heartbeat e saude tecnica do produto.
 - Execucao local de comandos declarados no manifesto.
 - Backup previo, aplicacao de release e rollback.
-- Cache local de licenca e politica de continuidade offline.
+- Projecao local da licenca Central e politica de continuidade offline.
 
 ## O que permanece local
 
@@ -73,6 +73,11 @@ repositorio nao deve manter copias completas ou forks locais desses artefatos.
 - Dados de menores recebem protecao e retencao especificas.
 - Segredos nunca aparecem em interface ou log.
 - Toda mudanca sensivel gera auditoria.
+
+O ToyGo! nao possui endpoint proprio de licenciamento. O codigo digitado no
+Desktop e um codigo de pareamento emitido para uma licenca `toygo` na Central;
+o Desktop guarda somente a credencial opaca e a chave privada local protegidas
+pelo armazenamento seguro do sistema operacional.
 
 ## Referencias autoritativas
 

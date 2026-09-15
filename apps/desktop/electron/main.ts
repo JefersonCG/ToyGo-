@@ -1,8 +1,8 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, safeStorage } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkMysqlConnection, readDesktopMysqlConfig } from "@toygo/database";
-import { createMachineId, FileLicenseStore, HttpLicenseTransport, HybridLicenseEngine } from "@toygo/licensing";
+import { createMachineId, CentralSdkAdapter, FileCentralInstallationStore, type ProtectedValueCodec } from "@toygo/central-adapter";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
@@ -29,38 +29,94 @@ async function createWindow(): Promise<void> {
   }
 }
 
-function createLicenseEngine(): HybridLicenseEngine {
-  const machineId = createMachineId();
-  const store = new FileLicenseStore(path.join(app.getPath("userData"), "local-license.json"));
-  const transport = new HttpLicenseTransport(process.env.TOYGO_LICENSE_SERVER_URL ?? "http://localhost:3000");
+class ElectronProtectedValueCodec implements ProtectedValueCodec {
+  protect(value: string): string {
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new Error("Armazenamento seguro do sistema operacional indisponivel.");
+    }
+    return safeStorage.encryptString(value).toString("base64");
+  }
 
-  return new HybridLicenseEngine(store, transport, {
-    machineId,
-    appVersion: process.env.TOYGO_APP_VERSION ?? app.getVersion(),
-    offlineGraceDays: 7
+  reveal(value: string): string {
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new Error("Armazenamento seguro do sistema operacional indisponivel.");
+    }
+    return safeStorage.decryptString(Buffer.from(value, "base64"));
+  }
+}
+
+function createCentralAdapter(): CentralSdkAdapter {
+  const store = new FileCentralInstallationStore(
+    path.join(app.getPath("userData"), "central-installation.json"),
+    new ElectronProtectedValueCodec(),
+  );
+  return new CentralSdkAdapter({
+    baseUrl: process.env.TOYGO_CENTRAL_URL ?? "https://central.multisistemas.com.br",
+    organizationId: process.env.TOYGO_CENTRAL_ORGANIZATION_ID ?? "",
+    productCode: "toygo",
+    installationLabel: process.env.TOYGO_INSTALLATION_LABEL ?? "ToyGo Desktop",
+    sdkVersion: "1.0.0",
+    store,
+    allowInsecureDevelopment: isDev,
   });
+}
+
+async function runCentralCycle(): Promise<void> {
+  const central = createCentralAdapter();
+  const mysql = await checkMysqlConnection(readDesktopMysqlConfig());
+  try {
+    await central.publishHeartbeat({
+      productVersion: process.env.TOYGO_APP_VERSION ?? app.getVersion(),
+      sdkVersion: "1.0.0",
+      healthStatus: mysql.ok ? "healthy" : "degraded",
+      capabilities: [
+        "licensing",
+        "heartbeat",
+        "events",
+        "remote_commands",
+        "managed_releases",
+        "backup_restore",
+        "notifications",
+        "aggregated_metrics",
+      ],
+      checks: [{ name: "mariadb", status: mysql.ok ? "healthy" : "degraded", detail: mysql.message }],
+    });
+  } catch {
+    // The local operation remains available when the Central is offline.
+  }
+  try {
+    await central.processRemoteCommands({
+      "diagnostics.collect": async () => ({ summary: "Diagnostico tecnico agregado coletado localmente." }),
+    });
+  } catch {
+    // Invalid, expired or unavailable commands are reconciled on the next cycle.
+  }
 }
 
 ipcMain.handle("toygo:get-runtime-status", async () => {
   const mysql = await checkMysqlConnection(readDesktopMysqlConfig());
-  const licenseEngine = createLicenseEngine();
-  const license = await licenseEngine.getLocalStatus();
+  const central = createCentralAdapter();
+  const license = await central.readLicenseProjection();
 
   return {
     mariadb: mysql,
     mysql,
     license,
-    machineId: license.machineId,
+    machineId: createMachineId(),
     appVersion: process.env.TOYGO_APP_VERSION ?? app.getVersion()
   };
 });
 
-ipcMain.handle("toygo:activate-license", async (_event, licenseKey: string) => {
-  const licenseEngine = createLicenseEngine();
-  return licenseEngine.activate(licenseKey);
+ipcMain.handle("toygo:pair-installation", async (_event, pairingCode: string) => {
+  const central = createCentralAdapter();
+  return central.pair(pairingCode);
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  await createWindow();
+  void runCentralCycle();
+  setInterval(() => void runCentralCycle(), 60_000);
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

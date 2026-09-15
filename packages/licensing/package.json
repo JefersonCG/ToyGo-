@@ -1,5 +1,5 @@
 {
-  "name": "@toygo/licensing",
+  "name": "@toygo/central-adapter",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,6 +7,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@toygo/integration-ports": "0.1.0"
   }
 }
