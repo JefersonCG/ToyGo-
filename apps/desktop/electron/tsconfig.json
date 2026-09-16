@@ -9,6 +9,7 @@
   },
   "include": ["*.ts"],
   "references": [
+    { "path": "../../../packages/backup" },
     { "path": "../../../packages/database" },
     { "path": "../../../packages/licensing" }
   ]

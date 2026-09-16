@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkMysqlConnection, readDesktopMysqlConfig } from "@toygo/database";
 import { createMachineId, CentralSdkAdapter, FileCentralInstallationStore, type ProtectedValueCodec } from "@toygo/central-adapter";
+import { MysqlDumpBackupService, type BackupManifest } from "@toygo/backup";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
@@ -61,6 +62,31 @@ function createCentralAdapter(): CentralSdkAdapter {
   });
 }
 
+function createBackupService(): MysqlDumpBackupService {
+  return new MysqlDumpBackupService({
+    config: readDesktopMysqlConfig(),
+    backupsDir: path.join(app.getPath("userData"), "backups"),
+  });
+}
+
+async function publishBackupManifest(manifest: BackupManifest): Promise<void> {
+  const central = createCentralAdapter();
+  try {
+    await central.publishBackupManifest({
+      backupId: manifest.id,
+      formatVersion: "1.0.0",
+      createdAt: manifest.createdAt,
+      sizeBytes: manifest.sizeBytes ?? 0,
+      sha256: manifest.checksumSha256 ?? "",
+      storageReference: `local://${manifest.filePath}`,
+      compatibility: { product_version: process.env.TOYGO_APP_VERSION ?? app.getVersion() },
+    });
+  } catch {
+    // Backup local ja esta seguro em disco mesmo se a Central estiver
+    // offline; o manifesto pode ser republicado manualmente depois.
+  }
+}
+
 async function runCentralCycle(): Promise<void> {
   const central = createCentralAdapter();
   const mysql = await checkMysqlConnection(readDesktopMysqlConfig());
@@ -97,11 +123,13 @@ ipcMain.handle("toygo:get-runtime-status", async () => {
   const mysql = await checkMysqlConnection(readDesktopMysqlConfig());
   const central = createCentralAdapter();
   const license = await central.readLicenseProjection();
+  const supportSessions = await central.listSupportSessions().catch(() => []);
 
   return {
     mariadb: mysql,
     mysql,
     license,
+    supportSessions,
     machineId: createMachineId(),
     appVersion: process.env.TOYGO_APP_VERSION ?? app.getVersion()
   };
@@ -110,6 +138,24 @@ ipcMain.handle("toygo:get-runtime-status", async () => {
 ipcMain.handle("toygo:pair-installation", async (_event, pairingCode: string) => {
   const central = createCentralAdapter();
   return central.pair(pairingCode);
+});
+
+ipcMain.handle(
+  "toygo:create-backup",
+  async (_event, reason: "manual" | "scheduled" | "before_update" = "manual") => {
+    const manifest = await createBackupService().createBackup({
+      reason,
+      requestedByUserId: "desktop-operator",
+    });
+    await publishBackupManifest(manifest);
+    return manifest;
+  },
+);
+
+ipcMain.handle("toygo:list-backups", async () => createBackupService().listBackups());
+
+ipcMain.handle("toygo:restore-backup", async (_event, backupId: string) => {
+  await createBackupService().restoreBackup({ backupId, requestedByUserId: "desktop-operator" });
 });
 
 app.whenReady().then(async () => {

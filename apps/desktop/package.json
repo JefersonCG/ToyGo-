@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@toygo/application": "0.1.0",
+    "@toygo/backup": "0.1.0",
     "@toygo/database": "0.1.0",
     "@toygo/domain": "0.1.0",
     "@toygo/central-adapter": "0.1.0",

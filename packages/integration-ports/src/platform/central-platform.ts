@@ -43,6 +43,21 @@ export interface CentralLicenseProjection {
   blockedReason: string | null;
 }
 
+export interface CentralSupportSession {
+  id: string;
+  organizationId: string;
+  productId: string;
+  installationId: string;
+  status: "active" | "closed" | "expired";
+  scopes: string[];
+  managedPaths: string[];
+  reason: string;
+  startedAt: string;
+  expiresAt: string;
+  closedAt: string | null;
+  forcedClosedReason: string | null;
+}
+
 export interface CentralPlatformPort {
   pair(pairingCode: string): Promise<CentralLicenseProjection>;
   rotateCredential(): Promise<CentralLicenseProjection>;
@@ -58,7 +73,7 @@ export interface CentralPlatformPort {
   processRemoteCommands(
     handlers: Partial<Record<string, (payload: Record<string, unknown>) => Promise<CentralCommandResult>>>,
   ): Promise<number>;
-  listSupportSessions(): Promise<unknown[]>;
+  listSupportSessions(): Promise<CentralSupportSession[]>;
   checkRelease(input: { productVersion: string; freeSpaceMb?: number }): Promise<unknown>;
   publishBackupManifest(input: {
     backupId: string;

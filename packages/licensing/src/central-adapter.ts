@@ -4,7 +4,8 @@ import type {
   CentralCommandResult,
   CentralHealthStatus,
   CentralLicenseProjection,
-  CentralPlatformPort
+  CentralPlatformPort,
+  CentralSupportSession
 } from "@toygo/integration-ports";
 
 type FetchLike = typeof fetch;
@@ -117,6 +118,38 @@ export interface CentralSdkAdapterOptions {
   allowInsecureDevelopment?: boolean;
 }
 
+interface CentralSupportSessionWire {
+  id: string;
+  organization_id: string;
+  product_id: string;
+  installation_id: string;
+  status: "active" | "closed" | "expired";
+  scopes: string[];
+  managed_paths: string[];
+  reason: string;
+  started_at: string;
+  expires_at: string;
+  closed_at: string | null;
+  forced_closed_reason: string | null;
+}
+
+function supportSessionFromWire(wire: CentralSupportSessionWire): CentralSupportSession {
+  return {
+    id: wire.id,
+    organizationId: wire.organization_id,
+    productId: wire.product_id,
+    installationId: wire.installation_id,
+    status: wire.status,
+    scopes: wire.scopes,
+    managedPaths: wire.managed_paths,
+    reason: wire.reason,
+    startedAt: wire.started_at,
+    expiresAt: wire.expires_at,
+    closedAt: wire.closed_at,
+    forcedClosedReason: wire.forced_closed_reason,
+  };
+}
+
 export interface CentralRemoteCommand {
   command_id: string;
   idempotency_key: string;
@@ -152,14 +185,35 @@ const TOYGO_EVENT_TYPES = new Set([
 
 const FORBIDDEN_DATA = /visitor|visitante|child|crianc|guardian|respons[aá]vel|minor|menor|rental|loca[cç][aã]o|waiver|document|email|phone|telefone|session|sess[aã]o|name|nome/i;
 
+// A Central exige um identificador tecnico estavel para agent_id
+// (^[A-Za-z0-9][A-Za-z0-9._:-]{1,119}$), mas installationLabel e um rotulo
+// livre para exibicao humana (ex.: "ToyGo Desktop", com espaco) -- nunca
+// bate com esse padrao. Sem essa normalizacao, todo lease/ack de comando
+// remoto falha com 422 contra uma Central real.
+const DIACRITICS_PATTERN = new RegExp("[̀-ͯ]", "g");
+
+function sanitizeAgentId(label: string): string {
+  let value = label
+    .normalize("NFKD")
+    .replace(DIACRITICS_PATTERN, "")
+    .replace(/[^A-Za-z0-9._:-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  if (value.length === 0) value = "agent";
+  if (!/^[A-Za-z0-9]/.test(value)) value = `a-${value}`;
+  if (value.length < 2) value = `${value}-agent`;
+  return value.slice(0, 120);
+}
+
 export class CentralSdkAdapter implements CentralPlatformPort {
   readonly #baseUrl: URL;
   readonly #fetch: FetchLike;
   readonly #options: CentralSdkAdapterOptions;
   readonly #now: () => Date;
   readonly #offlineGraceHours: number;
+  readonly #agentId: string;
 
   constructor(options: CentralSdkAdapterOptions) {
+    this.#agentId = sanitizeAgentId(options.installationLabel);
     this.#baseUrl = new URL(options.baseUrl);
     if (
       this.#baseUrl.protocol !== "https:" &&
@@ -333,7 +387,7 @@ export class CentralSdkAdapter implements CentralPlatformPort {
       await verifyRemoteCommand(command, state.commandPublicKey, this.#now());
       const leased = await this.request<CentralRemoteCommand>(
         `/api/v1/installations/commands/${encodeURIComponent(command.command_id)}/lease`,
-        { method: "POST", body: JSON.stringify({ agent_id: this.#options.installationLabel, lease_seconds: 120 }) },
+        { method: "POST", body: JSON.stringify({ agent_id: this.#agentId, lease_seconds: 120 }) },
         state.credential,
       );
       const handler = handlers[leased.type];
@@ -346,7 +400,7 @@ export class CentralSdkAdapter implements CentralPlatformPort {
           method: "POST",
           headers: { "Idempotency-Key": `ack-${leased.command_id}` },
           body: JSON.stringify({
-            agent_id: this.#options.installationLabel,
+            agent_id: this.#agentId,
             execution_id: `exec-${leased.command_id}`,
             status: handler ? "succeeded" : "failed",
             evidence: { summary: result.summary, artifacts: result.artifacts ?? [] },
@@ -361,9 +415,14 @@ export class CentralSdkAdapter implements CentralPlatformPort {
     return processed;
   }
 
-  async listSupportSessions(): Promise<unknown[]> {
+  async listSupportSessions(): Promise<CentralSupportSession[]> {
     const state = await this.requireState();
-    return this.request<unknown[]>("/api/v1/installations/support-sessions", undefined, state.credential);
+    const wire = await this.request<CentralSupportSessionWire[]>(
+      "/api/v1/installations/support-sessions",
+      undefined,
+      state.credential,
+    );
+    return wire.map(supportSessionFromWire);
   }
 
   async checkRelease(input: { productVersion: string; freeSpaceMb?: number }): Promise<unknown> {

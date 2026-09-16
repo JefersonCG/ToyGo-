@@ -27,6 +27,10 @@ export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreen
     return "danger";
   }, [runtime]);
 
+  // O painel de carrinhos/playground so pode abrir com licenca ativa ou em
+  // carencia -- "inactive"/"blocked" bloqueiam a operacao, nao so exibem um aviso.
+  const canOpenOperation = runtime?.license.status === "active" || runtime?.license.status === "grace";
+
   async function refreshStatus() {
     setError(null);
     try {
@@ -93,12 +97,36 @@ export function LoginScreen({ skin, onSkinChange, onOpenOperation }: LoginScreen
             <button
               type="button"
               onClick={onOpenOperation}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-black text-accent-contrast shadow-control transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-accent/30"
+              disabled={!canOpenOperation}
+              title={canOpenOperation ? undefined : "Licenca inativa ou bloqueada -- pareie ou regularize antes de abrir o painel."}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-black text-accent-contrast shadow-control transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 focus:outline-none focus:ring-4 focus:ring-accent/30"
             >
               <LogIn className="h-5 w-5" />
               Abrir painel
             </button>
           </header>
+
+          {runtime && !canOpenOperation && (
+            <div className="mb-5 flex items-start gap-2 rounded-md border border-danger/50 bg-danger/10 p-3 text-sm font-bold text-danger">
+              <AlertTriangle className="mt-0.5 h-4 w-4" />
+              Carrinhos e playground ficam bloqueados sem licenca ativa (status atual:{" "}
+              {runtime.license.status}
+              {runtime.license.blockedReason ? ` -- ${runtime.license.blockedReason}` : ""}). Pareie a
+              instalacao ou regularize a assinatura na Central para liberar o painel.
+            </div>
+          )}
+
+          {runtime && runtime.supportSessions.some((session) => session.status === "active") && (
+            <div className="mb-5 flex items-start gap-2 rounded-md border border-warning/50 bg-warning/10 p-3 text-sm font-bold text-warning">
+              <ShieldCheck className="mt-0.5 h-4 w-4" />
+              Sessao de suporte remoto ativa concedida pela Central (
+              {runtime.supportSessions
+                .filter((session) => session.status === "active")
+                .map((session) => session.reason)
+                .join("; ")}
+              ). O suporte tem acesso aos escopos autorizados ate a expiracao ou o fechamento da sessao.
+            </div>
+          )}
 
           <div className="grid grid-cols-[minmax(0,1fr)_390px] gap-5">
             <div className="space-y-5">

@@ -18,12 +18,16 @@ function response(body: unknown, status = 200): Response {
   });
 }
 
-function adapter(fetchImpl: typeof fetch, store = new MemoryCentralInstallationStore()): CentralSdkAdapter {
+function adapter(
+  fetchImpl: typeof fetch,
+  store = new MemoryCentralInstallationStore(),
+  installationLabel = "toygo-desktop-1",
+): CentralSdkAdapter {
   return new CentralSdkAdapter({
     baseUrl: "http://127.0.0.1:8000",
     organizationId: "org-1",
     productCode: "toygo",
-    installationLabel: "toygo-desktop-1",
+    installationLabel,
     sdkVersion: "1.0.0",
     store,
     fetch: fetchImpl,
@@ -163,6 +167,78 @@ describe("CentralSdkAdapter", () => {
       "POST /api/v1/installations/commands/command-1/result",
     ]);
     expect(ack).toMatchObject({ status: "succeeded", execution_id: "exec-command-1" });
+  });
+
+  it("lists support sessions normalized to camelCase, without leaking the wire shape", async () => {
+    const store = new MemoryCentralInstallationStore();
+    await store.write(initialState());
+    const client = adapter(async (input) => {
+      const request = new Request(input);
+      expect(request.url).toContain("/api/v1/installations/support-sessions");
+      return response([{
+        id: "support-1",
+        organization_id: "org-1",
+        product_id: "product-1",
+        installation_id: "installation-1",
+        status: "active",
+        scopes: ["diagnostics"],
+        managed_paths: ["/var/log/toygo"],
+        reason: "Investigacao de heartbeat degradado",
+        started_at: "2026-09-15T12:00:00.000Z",
+        expires_at: "2026-09-15T13:00:00.000Z",
+        closed_at: null,
+        forced_closed_reason: null,
+      }]);
+    }, store);
+
+    const sessions = await client.listSupportSessions();
+
+    expect(sessions).toEqual([{
+      id: "support-1",
+      organizationId: "org-1",
+      productId: "product-1",
+      installationId: "installation-1",
+      status: "active",
+      scopes: ["diagnostics"],
+      managedPaths: ["/var/log/toygo"],
+      reason: "Investigacao de heartbeat degradado",
+      startedAt: "2026-09-15T12:00:00.000Z",
+      expiresAt: "2026-09-15T13:00:00.000Z",
+      closedAt: null,
+      forcedClosedReason: null,
+    }]);
+  });
+
+  it("sanitizes a human-readable installation label into a wire-safe agent_id", async () => {
+    // Regressao: a Central exige agent_id casando com
+    // ^[A-Za-z0-9][A-Za-z0-9._:-]{1,119}$, mas installationLabel e um rotulo
+    // livre ("ToyGo Desktop", com espaco) -- sem essa sanitizacao, todo
+    // lease/ack de comando remoto falhava com 422 contra uma Central real.
+    const keyPair = await webcrypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]) as CryptoKeyPair;
+    const publicKey = base64Url(await webcrypto.subtle.exportKey("raw", keyPair.publicKey));
+    const command = await makeCommand(publicKey, keyPair.privateKey);
+    const store = new MemoryCentralInstallationStore();
+    await store.write(initialState({ commandPublicKey: publicKey }));
+    const agentIds: string[] = [];
+    const client = adapter(async (input, init) => {
+      const request = new Request(input, init);
+      if (request.url.endsWith("/commands")) return response([command]);
+      if (request.url.endsWith("/lease")) {
+        agentIds.push((JSON.parse(await request.text()) as { agent_id: string }).agent_id);
+        return response(command);
+      }
+      agentIds.push((JSON.parse(await request.text()) as { agent_id: string }).agent_id);
+      return response({ status: "succeeded" });
+    }, store, "ToyGo Desktop");
+
+    await client.processRemoteCommands({
+      "diagnostics.collect": async () => ({ summary: "Diagnostico tecnico agregado." }),
+    });
+
+    expect(agentIds).toEqual(["ToyGo-Desktop", "ToyGo-Desktop"]);
+    for (const agentId of agentIds) {
+      expect(agentId).toMatch(/^[A-Za-z0-9][A-Za-z0-9._:-]{1,119}$/);
+    }
   });
 
   it("encrypts installation credentials before writing the local file", async () => {
