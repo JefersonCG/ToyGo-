@@ -86,8 +86,10 @@ jobs:
           Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue
           Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue
           if ($process.ExitCode -ne 0) { throw "Bootstrap MariaDB falhou com codigo $($process.ExitCode)." }
-          $service = Get-Service -Name ToyGoMariaDB -ErrorAction Stop
-          if ($service.Status -ne 'Running') { throw "Servico ToyGoMariaDB nao esta ativo: $($service.Status)" }
+          $admin = Join-Path $env:TOYGO_INSTALL_ROOT 'resources\mariadb\11.8\bin\mariadb-admin.exe'
+          $env:MYSQL_PWD = 'ci-root-password'
+          & $admin '--host=127.0.0.1' '--port=3306' '--user=root' 'ping'
+          if ($LASTEXITCODE -ne 0) { throw "MariaDB local nao respondeu ao health check." }
 
       - name: Verify packaged resources
         shell: powershell

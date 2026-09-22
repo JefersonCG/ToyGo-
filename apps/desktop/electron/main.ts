@@ -88,6 +88,7 @@ async function provisionPackagedMariaDb(): Promise<void> {
     mysqlPath: path.join(binDir, "mariadb.exe"),
     mysqlAdminPath: path.join(binDir, "mariadb-admin.exe"),
     installDbPath: path.join(binDir, "mariadb-install-db.exe"),
+    serverPath: path.join(binDir, "mariadbd.exe"),
     dataDir: process.env.TOYGO_MARIADB_DATA_DIR ?? path.join(app.getPath("userData"), "mariadb-data"),
     configTemplatePath: process.env.TOYGO_MARIADB_CONFIG_PATH ?? path.join(resourceRoot, "mysql", "desktop", "my.ini"),
     serviceName: process.env.TOYGO_MARIADB_SERVICE_NAME ?? "ToyGoMariaDB",

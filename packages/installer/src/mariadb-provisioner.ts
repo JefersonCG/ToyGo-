@@ -13,6 +13,11 @@ export interface InstallerCommandRunner {
     args: string[],
     options?: { env?: NodeJS.ProcessEnv; stdin?: string },
   ): Promise<InstallerCommandResult>;
+  start?(
+    command: string,
+    args: string[],
+    options?: { env?: NodeJS.ProcessEnv },
+  ): Promise<void>;
 }
 
 export interface MariaDbProvisionerOptions {
@@ -22,6 +27,7 @@ export interface MariaDbProvisionerOptions {
   mysqlPath: string;
   mysqlAdminPath: string;
   installDbPath?: string;
+  serverPath?: string;
   dataDir?: string;
   configTemplatePath?: string;
   serviceName: string;
@@ -86,12 +92,17 @@ export class MariaDbProvisioner {
       return { startedService: false, databaseReady: true, message: "MariaDB local conectado" };
     }
 
+    if (this.#options.serverPath && !this.#options.dataDir) {
+      throw new Error("TOYGO_MARIADB_DATA_DIR e obrigatorio para iniciar o MariaDB local.");
+    }
+
     if (this.#options.installDbPath && this.#options.dataDir && !(await this.pathExists(`${this.#options.dataDir}\\mysql`))) {
       const initializeArgs = [
         `--datadir=${this.#options.dataDir}`,
-        `--service=${this.#options.serviceName}`,
         "--password=",
         `--port=${this.#options.config.port}`,
+        "--silent",
+        ...(!this.#options.serverPath ? [`--service=${this.#options.serviceName}`] : []),
         ...(this.#options.configTemplatePath ? [`--config=${this.#options.configTemplatePath}`] : []),
       ];
       const initialized = await this.#options.commandRunner.run(this.#options.installDbPath, initializeArgs);
@@ -101,14 +112,34 @@ export class MariaDbProvisioner {
       this.#freshDatabase = true;
     }
 
-    const start = await this.#options.commandRunner.run("sc.exe", ["start", this.#options.serviceName]);
-    if (start.exitCode !== 0 && !/already been started|ja foi iniciado/i.test(start.stdout + start.stderr)) {
-      throw new Error(`Nao foi possivel iniciar o servico ${this.#options.serviceName}: ${start.stderr || start.stdout}`);
+    if (this.#options.serverPath) {
+      if (!this.#options.commandRunner.start) {
+        throw new Error("O command runner nao suporta iniciar o MariaDB local.");
+      }
+      await this.#options.commandRunner.start(
+        this.#options.serverPath,
+        [
+          ...(this.#options.configTemplatePath ? [`--defaults-file=${this.#options.configTemplatePath}`] : []),
+          `--datadir=${this.#options.dataDir}`,
+          `--port=${this.#options.config.port}`,
+          `--bind-address=${this.#options.config.host}`,
+        ],
+        { env: process.env },
+      );
+    } else {
+      const start = await this.#options.commandRunner.run("sc.exe", ["start", this.#options.serviceName]);
+      if (start.exitCode !== 0 && !/already been started|ja foi iniciado/i.test(start.stdout + start.stderr)) {
+        throw new Error(`Nao foi possivel iniciar o servico ${this.#options.serviceName}: ${start.stderr || start.stdout}`);
+      }
     }
 
     for (let attempt = 0; attempt < 20; attempt += 1) {
       if ((await this.ping()) || (this.#freshDatabase && await this.pingRootWithoutPassword())) {
-        return { startedService: true, databaseReady: true, message: "MariaDB local iniciado e conectado" };
+        return {
+          startedService: !this.#options.serverPath,
+          databaseReady: true,
+          message: this.#options.serverPath ? "MariaDB local iniciado como processo" : "MariaDB local iniciado e conectado",
+        };
       }
       await this.#sleep(500);
     }

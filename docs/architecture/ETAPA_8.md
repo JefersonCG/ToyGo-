@@ -8,8 +8,9 @@ controle administrativo no portal.
 
 - `@toygo/installer` possui um provisionador Windows de MariaDB.
 - O provisionador faz health check com `mariadb-admin`.
-- Se o servico nao responder, ele solicita o start por `sc.exe` e aguarda a
-  recuperacao do health check.
+- O Desktop empacotado inicia o MariaDB em processo local desacoplado, sem
+  exigir elevacao para registrar um servico Windows; chamadores legados sem
+  `serverPath` continuam podendo usar `sc.exe`.
 - O bootstrap cria banco e usuario tecnico, aplica o schema e passa senhas por
   `MYSQL_PWD`, nunca por argumentos de processo.
 - O fluxo e injetavel por `InstallerCommandRunner`, permitindo teste sem

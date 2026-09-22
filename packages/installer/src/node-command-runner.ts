@@ -2,6 +2,26 @@ import { spawn } from "node:child_process";
 import type { InstallerCommandResult, InstallerCommandRunner } from "./mariadb-provisioner";
 
 export class NodeInstallerCommandRunner implements InstallerCommandRunner {
+  start(
+    command: string,
+    args: string[],
+    options?: { env?: NodeJS.ProcessEnv },
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const child = spawn(command, args, {
+        env: options?.env ?? process.env,
+        stdio: "ignore",
+        detached: true,
+        windowsHide: true,
+      });
+      child.once("error", reject);
+      child.once("spawn", () => {
+        child.unref();
+        resolve();
+      });
+    });
+  }
+
   run(
     command: string,
     args: string[],

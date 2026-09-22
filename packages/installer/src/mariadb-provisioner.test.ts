@@ -6,6 +6,7 @@ import { MariaDbProvisioner, type InstallerCommandResult, type InstallerCommandR
 
 class FakeRunner implements InstallerCommandRunner {
   readonly calls: Array<{ command: string; args: string[]; stdin?: string }> = [];
+  readonly starts: Array<{ command: string; args: string[] }> = [];
   pingResults = [1, 0];
 
   async run(command: string, args: string[], options?: { env?: NodeJS.ProcessEnv; stdin?: string }): Promise<InstallerCommandResult> {
@@ -14,6 +15,10 @@ class FakeRunner implements InstallerCommandRunner {
       return { exitCode: this.pingResults.shift() ?? 0, stdout: "", stderr: "" };
     }
     return { exitCode: 0, stdout: "", stderr: "" };
+  }
+
+  async start(command: string, args: string[]): Promise<void> {
+    this.starts.push({ command, args });
   }
 }
 
@@ -80,6 +85,33 @@ describe("MariaDbProvisioner", () => {
     expect(mysqlCalls.flatMap((call) => call.args.join(" "))).not.toContain("app-secret");
     expect(mysqlCalls[0].stdin).toContain("CREATE DATABASE IF NOT EXISTS");
     expect(mysqlCalls[1].stdin).toContain("CREATE TABLE installer_probe");
+  });
+
+  it("can start MariaDB as a user-space process without registering a service", async () => {
+    const runner = new FakeRunner();
+    const provisioner = new MariaDbProvisioner({
+      config: { host: "127.0.0.1", port: 3306, database: "toygo_desktop", user: "toygo_app", password: "secret" },
+      rootPassword: "root-secret",
+      schemaPath: "schema.sql",
+      mysqlPath: "mysql.exe",
+      mysqlAdminPath: "mariadb-admin.exe",
+      installDbPath: "mariadb-install-db.exe",
+      serverPath: "mariadbd.exe",
+      dataDir: "C:\\toygo-data",
+      serviceName: "ToyGoMariaDB",
+      commandRunner: runner,
+      platform: "win32",
+      sleep: async () => undefined,
+    });
+
+    const result = await provisioner.ensureReady();
+
+    expect(result.startedService).toBe(false);
+    expect(runner.calls.some((call) => call.command === "sc.exe")).toBe(false);
+    expect(runner.starts).toEqual([{
+      command: "mariadbd.exe",
+      args: ["--datadir=C:\\toygo-data", "--port=3306", "--bind-address=127.0.0.1"],
+    }]);
   });
 
   it("does not run Windows service commands on another platform", async () => {
