@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { checkMysqlConnection, readDesktopMysqlConfig } from "@toygo/database";
 import { createMachineId, CentralSdkAdapter, FileCentralInstallationStore, type ProtectedValueCodec } from "@toygo/central-adapter";
 import { MysqlDumpBackupService, type BackupManifest } from "@toygo/backup";
+import { MariaDbProvisioner, NodeInstallerCommandRunner, prepareUpgrade } from "@toygo/installer";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
@@ -67,6 +68,32 @@ function createBackupService(): MysqlDumpBackupService {
     config: readDesktopMysqlConfig(),
     backupsDir: path.join(app.getPath("userData"), "backups"),
   });
+}
+
+async function provisionPackagedMariaDb(): Promise<void> {
+  const rootPassword = process.env.TOYGO_MARIADB_ROOT_PASSWORD;
+  if (!rootPassword) {
+    throw new Error("TOYGO_MARIADB_ROOT_PASSWORD e obrigatorio para o bootstrap inicial do MariaDB.");
+  }
+  const resourceRoot = process.resourcesPath;
+  const binDir = process.env.TOYGO_MARIADB_BIN_DIR ?? path.join(resourceRoot, "mariadb", "11.8", "bin");
+  const config = readDesktopMysqlConfig();
+  if (config.password === "change-me") {
+    throw new Error("TOYGO_DESKTOP_MARIADB_PASSWORD e obrigatorio para o bootstrap inicial do MariaDB.");
+  }
+  const result = await new MariaDbProvisioner({
+    config,
+    rootPassword,
+    schemaPath: process.env.TOYGO_MARIADB_SCHEMA_PATH ?? path.join(resourceRoot, "mysql", "desktop", "schema.sql"),
+    mysqlPath: path.join(binDir, "mariadb.exe"),
+    mysqlAdminPath: path.join(binDir, "mariadb-admin.exe"),
+    installDbPath: path.join(binDir, "mariadb-install-db.exe"),
+    dataDir: process.env.TOYGO_MARIADB_DATA_DIR ?? path.join(app.getPath("userData"), "mariadb-data"),
+    configTemplatePath: process.env.TOYGO_MARIADB_CONFIG_PATH ?? path.join(resourceRoot, "mysql", "desktop", "my.ini"),
+    serviceName: process.env.TOYGO_MARIADB_SERVICE_NAME ?? "ToyGoMariaDB",
+    commandRunner: new NodeInstallerCommandRunner(),
+  }).bootstrap();
+  console.log(`MariaDB local provisionado: ${result.message}`);
 }
 
 async function publishBackupManifest(manifest: BackupManifest): Promise<void> {
@@ -158,7 +185,26 @@ ipcMain.handle("toygo:restore-backup", async (_event, backupId: string) => {
   await createBackupService().restoreBackup({ backupId, requestedByUserId: "desktop-operator" });
 });
 
+ipcMain.handle("toygo:prepare-update", async (_event, targetVersion: string) => {
+  return prepareUpgrade({
+    currentVersion: process.env.TOYGO_APP_VERSION ?? app.getVersion(),
+    targetVersion,
+    backupService: createBackupService(),
+    requestedByUserId: "desktop-updater",
+  });
+});
+
 app.whenReady().then(async () => {
+  if (process.argv.includes("--toygo-provision")) {
+    try {
+      await provisionPackagedMariaDb();
+      app.quit();
+    } catch (error) {
+      console.error(error);
+      app.exit(1);
+    }
+    return;
+  }
   await createWindow();
   void runCentralCycle();
   setInterval(() => void runCentralCycle(), 60_000);

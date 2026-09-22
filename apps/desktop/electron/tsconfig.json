@@ -11,6 +11,7 @@
   "references": [
     { "path": "../../../packages/backup" },
     { "path": "../../../packages/database" },
-    { "path": "../../../packages/licensing" }
+    { "path": "../../../packages/licensing" },
+    { "path": "../../../packages/installer" }
   ]
 }

@@ -1,21 +1,25 @@
-# O_Batedor no ToyGo! — requisito de instalação (ainda não implementado)
+# O_Batedor no ToyGo! — preflight do instalador
 
 ## Status
 
-Este documento registra o `O_Batedor` como requisito obrigatório do instalador do ToyGo! Desktop, replicando o contrato já validado em produção no MultiPlus+ (`scripts/windows/o_batedor.ps1`, detalhado em `docs/architecture/O_BATEDOR_DOSSIE.md` e `docs/roadmap/OBatedor.md` daquele repositório). **Nenhuma linha de código do Batedor existe hoje no ToyGo!.** Este documento é o requisito de aceite, não a implementação.
+Este documento registra o `O_Batedor` como requisito obrigatório do instalador do ToyGo! Desktop. A implementação dedicada está em `scripts/windows/o_batedor.ps1`, com o mesmo contrato de segurança validado no MultiPlus+: DryRun por padrão, mutação explícita, diagnóstico JSON/TXT e handoff consumível pelo instalador.
 
 ## Por que reaproveitar o O_Batedor em vez de criar um instalador novo do zero
 
 O ToyGo! e o MultiPlus+ compartilham o mesmo perfil de implantação: aplicação Desktop Windows, instalada em máquina de comerciante/operador sem TI dedicado, com persistência local (MariaDB/MySQL) e necessidade de diagnóstico reproduzível quando o suporte remoto precisa investigar um ambiente. O contrato de segurança do O_Batedor já foi pensado, documentado e exercitado para esse exato cenário — recriar isso do zero para o ToyGo! reintroduziria riscos (hardening incorreto, regras de firewall abertas demais, bloqueio indevido de Windows Update) que o MultiPlus+ já endereçou.
 
-## O que precisa ser decidido antes de codificar
+## Decisão adotada
 
-O script canônico do MultiPlus+ hoje é específico daquele produto: nome fixo `MultiPlus`, pasta `C:\MultiPlus`, log em `%LOCALAPPDATA%\MultiPlus\Logs`, regras de firewall nomeadas para `8080/TCP` (API local) e `3306/TCP` (MariaDB). Antes de "colocar o Batedor no ToyGo!", uma destas rotas precisa ser escolhida — e isso é uma decisão de arquitetura, não um detalhe de implementação:
+Foi adotado um fork dedicado do ToyGo em `scripts/windows/o_batedor.ps1`,
+porque os dois repositórios não compartilham um pacote executável. O fork
+mantém o mesmo contrato de segurança; mudanças devem ser portadas e revisadas
+nos dois produtos.
 
-1. **Generalizar o script existente** (parametrizar nome do produto, pasta, portas) para que `scripts/windows/o_batedor.ps1` do MultiPlus+ vire um utilitário compartilhado entre os dois produtos, versionado num só lugar (evita duas cópias divergindo com o tempo; exige decidir onde esse compartilhado mora — um repositório/pacote comum, não um fork).
-2. **Fork dedicado para o ToyGo!**, com o mesmo contrato de segurança e as mesmas fases, mas nome, pasta e portas próprias do ToyGo! (mais simples de começar, risco de divergência entre os dois scripts ao longo do tempo se não houver disciplina de manter os contratos sincronizados).
+O script canônico do MultiPlus+ é específico daquele produto. O ToyGo usa um
+fork dedicado em `scripts/windows/o_batedor.ps1`, com pasta, logs, portas e
+handoff próprios. O contrato de segurança permanece equivalente e qualquer
+mudança deve ser revisada nos dois produtos.
 
-Recomendação atual: opção 1 (generalizar), porque o contrato de segurança (DryRun por padrão, `-AllowMutation` explícito, preservação de Defender/UAC/Firewall global/Windows Update, sem encerrar processos alheios, sem desativar USB) é exatamente o mesmo nos dois produtos — só os parâmetros de produto mudam. Isso também evita o problema clássico de "consertei um bug de segurança no Batedor do MultiPlus+ e esqueci de replicar no do ToyGo!".
 
 ## Contrato de segurança (não muda entre produtos)
 

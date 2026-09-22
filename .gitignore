@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-electron/
+release/
 dist-types/
 .vite/
 .next/
@@ -13,3 +14,5 @@ coverage/
 local-license.json
 backup-output/
 mysql-data/
+infra/mariadb-embedded/11.8/vendor/
+infra/mariadb-embedded/11.8/*.zip

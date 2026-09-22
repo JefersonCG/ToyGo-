@@ -1,0 +1,28 @@
+appId: br.com.multisistemas.toygo
+productName: ToyGo!
+artifactName: ToyGo-Setup-${version}.${ext}
+asar: true
+compression: maximum
+directories:
+  output: ../../release
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+extraResources:
+  - from: ../../infra/mysql/desktop
+    to: mysql/desktop
+  - from: ../../packages/installer/dist
+    to: installer
+  - from: ../../scripts/windows/o_batedor.ps1
+    to: installer/o_batedor.ps1
+  - from: ../../scripts/windows/provision-toygo.ps1
+    to: installer/provision-toygo.ps1
+  - from: ../../infra/mariadb-embedded/11.8/vendor
+    to: mariadb/11.8
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ToyGo!

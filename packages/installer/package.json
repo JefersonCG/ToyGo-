@@ -1,0 +1,23 @@
+{
+  "name": "@toygo/installer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "toygo-installer": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "@toygo/database": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "vitest": "^2.1.9"
+  }
+}

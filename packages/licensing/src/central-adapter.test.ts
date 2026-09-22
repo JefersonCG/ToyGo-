@@ -241,6 +241,34 @@ describe("CentralSdkAdapter", () => {
     }
   });
 
+  it("applies signed Central license block and unblock commands to the local projection", async () => {
+    const keyPair = await webcrypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]) as CryptoKeyPair;
+    const publicKey = base64Url(await webcrypto.subtle.exportKey("raw", keyPair.publicKey));
+    const store = new MemoryCentralInstallationStore();
+    await store.write(initialState({ commandPublicKey: publicKey }));
+    const blocked = await makeCommand(publicKey, keyPair.privateKey, "license.block", { reason: "Mensalidade em atraso" }, "L3", 1);
+    const unblocked = await makeCommand(publicKey, keyPair.privateKey, "license.unblock", { reason: "Pagamento confirmado" }, "L2", 1);
+    let commandIndex = 0;
+    const client = adapter(async (input, init) => {
+      const request = new Request(input, init);
+      if (new URL(request.url).pathname.endsWith("/commands")) {
+        return response([commandIndex++ === 0 ? blocked : unblocked]);
+      }
+      if (new URL(request.url).pathname.endsWith("/lease")) {
+        return response(commandIndex === 1 ? blocked : unblocked);
+      }
+      return response({ status: "succeeded" });
+    }, store);
+
+    await client.processRemoteCommands({});
+    expect((await client.readLicenseProjection()).status).toBe("blocked");
+    expect((await store.read())?.blockedReason).toBe("Mensalidade em atraso");
+
+    await client.processRemoteCommands({});
+    expect((await client.readLicenseProjection()).status).toBe("active");
+    expect((await store.read())?.blockedReason).toBeNull();
+  });
+
   it("encrypts installation credentials before writing the local file", async () => {
     const path = `${process.env.TEMP ?? "."}/toygo-central-installation-${Date.now()}.json`;
     const store = new FileCentralInstallationStore(path, new MemoryProtectedValueCodec());
@@ -254,21 +282,27 @@ describe("CentralSdkAdapter", () => {
   });
 });
 
-async function makeCommand(publicKey: string, privateKey: CryptoKey): Promise<CentralRemoteCommandLike> {
-  const payload = { reason: "technical" };
+async function makeCommand(
+  publicKey: string,
+  privateKey: CryptoKey,
+  type = "diagnostics.collect",
+  payload: Record<string, unknown> = { reason: "technical" },
+  riskLevel: "L0" | "L1" | "L2" | "L3" = "L0",
+  requiredApprovals = 0,
+): Promise<CentralRemoteCommandLike> {
   const payloadSha256 = createHash("sha256").update(canonicalJson(payload)).digest("hex");
   const command = {
     command_id: "command-1",
     idempotency_key: "idempotency-1",
     schema_version: "1.0.0" as const,
-    type: "diagnostics.collect",
+    type,
     product_code: "toygo",
     organization_id: "org-1",
     installation_id: "installation-1",
     issued_at: "2026-09-12T11:59:00.000Z",
     expires_at: "2026-09-12T12:05:00.000Z",
-    risk_level: "L0" as const,
-    required_approvals: 0,
+    risk_level: riskLevel,
+    required_approvals: requiredApprovals,
     payload,
     payload_sha256: payloadSha256,
     signature: "",

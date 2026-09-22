@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld("toygo", {
   createBackup: (reason?: "manual" | "scheduled" | "before_update") =>
     ipcRenderer.invoke("toygo:create-backup", reason),
   listBackups: () => ipcRenderer.invoke("toygo:list-backups"),
-  restoreBackup: (backupId: string) => ipcRenderer.invoke("toygo:restore-backup", backupId)
+  restoreBackup: (backupId: string) => ipcRenderer.invoke("toygo:restore-backup", backupId),
+  prepareUpdate: (targetVersion: string) => ipcRenderer.invoke("toygo:prepare-update", targetVersion)
 });

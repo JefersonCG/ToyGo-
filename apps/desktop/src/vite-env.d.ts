@@ -34,6 +34,12 @@ interface ToygoRuntimeStatus {
   appVersion: string;
 }
 
+interface ToygoUpgradePreparation {
+  currentVersion: string;
+  targetVersion: string;
+  backupCreated: boolean;
+}
+
 interface Window {
   toygo: {
     getRuntimeStatus(): Promise<ToygoRuntimeStatus>;
@@ -41,5 +47,6 @@ interface Window {
     createBackup(reason?: "manual" | "scheduled" | "before_update"): Promise<ToygoBackupManifest>;
     listBackups(): Promise<ToygoBackupManifest[]>;
     restoreBackup(backupId: string): Promise<void>;
+    prepareUpdate(targetVersion: string): Promise<ToygoUpgradePreparation>;
   };
 }

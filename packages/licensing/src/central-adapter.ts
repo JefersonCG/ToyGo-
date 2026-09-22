@@ -380,7 +380,7 @@ export class CentralSdkAdapter implements CentralPlatformPort {
   async processRemoteCommands(
     handlers: Partial<Record<string, (payload: Record<string, unknown>) => Promise<CentralCommandResult>>>,
   ): Promise<number> {
-    const state = await this.requireState();
+    const state = await this.readState();
     const commands = await this.request<CentralRemoteCommand[]>("/api/v1/installations/commands", undefined, state.credential);
     let processed = 0;
     for (const command of commands) {
@@ -390,10 +390,26 @@ export class CentralSdkAdapter implements CentralPlatformPort {
         { method: "POST", body: JSON.stringify({ agent_id: this.#agentId, lease_seconds: 120 }) },
         state.credential,
       );
-      const handler = handlers[leased.type];
-      const result = handler
-        ? await handler(leased.payload)
-        : { summary: `Comando ${leased.type} nao possui handler local.` };
+      const controlCommand = leased.type === "license.block" || leased.type === "license.unblock";
+      const blockedForOperation = Boolean(state.blockedReason) && leased.type !== "license.unblock";
+      const handler = blockedForOperation ? undefined : handlers[leased.type];
+      let result: CentralCommandResult;
+      if (leased.type === "license.block") {
+        const reason = typeof leased.payload.reason === "string" && leased.payload.reason.trim()
+          ? leased.payload.reason.trim()
+          : "Licenca bloqueada remotamente pela Central.";
+        state.blockedReason = reason;
+        result = { summary: `Licenca bloqueada localmente: ${reason}` };
+      } else if (leased.type === "license.unblock") {
+        state.blockedReason = null;
+        result = { summary: "Licenca desbloqueada localmente pela Central." };
+      } else if (blockedForOperation) {
+        result = { summary: `Comando ${leased.type} ignorado enquanto a licenca esta bloqueada.` };
+      } else {
+        result = handler
+          ? await handler(leased.payload)
+          : { summary: `Comando ${leased.type} nao possui handler local.` };
+      }
       await this.request(
         `/api/v1/installations/commands/${encodeURIComponent(leased.command_id)}/result`,
         {
@@ -402,9 +418,13 @@ export class CentralSdkAdapter implements CentralPlatformPort {
           body: JSON.stringify({
             agent_id: this.#agentId,
             execution_id: `exec-${leased.command_id}`,
-            status: handler ? "succeeded" : "failed",
+            status: controlCommand || handler ? "succeeded" : "failed",
             evidence: { summary: result.summary, artifacts: result.artifacts ?? [] },
-            failure_reason: handler ? null : "handler_unconfigured",
+            failure_reason: controlCommand || handler
+              ? null
+              : blockedForOperation
+                ? "license_blocked"
+                : "handler_unconfigured",
           }),
         },
         state.credential,
@@ -464,9 +484,14 @@ export class CentralSdkAdapter implements CentralPlatformPort {
   }
 
   private async requireState(): Promise<CentralInstallationState> {
+    const state = await this.readState();
+    if (state.blockedReason) throw new Error(state.blockedReason);
+    return state;
+  }
+
+  private async readState(): Promise<CentralInstallationState> {
     const state = await this.#options.store.read();
     if (!state) throw new Error("Instalacao ToyGo ainda nao foi pareada com a Central.");
-    if (state.blockedReason) throw new Error(state.blockedReason);
     return state;
   }
 
