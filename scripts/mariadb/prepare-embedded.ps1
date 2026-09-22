@@ -27,7 +27,8 @@ if ((-not $Force) -and (Test-Payload)) {
 
 if (-not (Test-Path -LiteralPath $archive -PathType Leaf)) {
     Write-Host "Baixando $($manifest.downloadUrl)"
-    Invoke-WebRequest -Uri $manifest.downloadUrl -OutFile $archive -UseBasicParsing
+    & curl.exe --fail --location --retry 5 --retry-delay 3 --proto '=https' --output $archive $manifest.downloadUrl
+    if ($LASTEXITCODE -ne 0) { throw "Download MariaDB falhou com codigo $LASTEXITCODE" }
 }
 $actualHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
 if ($actualHash -ne $manifest.sha256.ToLowerInvariant()) {
