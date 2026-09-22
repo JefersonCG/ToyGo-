@@ -73,7 +73,7 @@ jobs:
           $stderrPath = Join-Path $env:RUNNER_TEMP 'toygo-provision.stderr.log'
           $env:TOYGO_MARIADB_ROOT_PASSWORD = 'ci-root-password'
           $env:TOYGO_DESKTOP_MARIADB_PASSWORD = 'ci-app-password'
-          $env:TOYGO_DESKTOP_MARIADB_DATABASE = 'toygo_ci'
+          $env:TOYGO_DESKTOP_MARIADB_DATABASE = 'toygo_desktop'
           $env:TOYGO_DESKTOP_MARIADB_USER = 'toygo_ci'
           $env:TOYGO_MARIADB_DATA_DIR = $dataDir
           $process = Start-Process -FilePath $desktop -ArgumentList '--toygo-provision' -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
