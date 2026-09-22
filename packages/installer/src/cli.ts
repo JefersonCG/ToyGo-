@@ -27,6 +27,7 @@ async function main(): Promise<void> {
     mysqlPath: path.join(binDir, "mariadb.exe"),
     mysqlAdminPath: path.join(binDir, "mariadb-admin.exe"),
     installDbPath: path.join(binDir, "mariadb-install-db.exe"),
+    serverPath: path.join(binDir, "mariadbd.exe"),
     dataDir,
     configTemplatePath,
     serviceName: process.env.TOYGO_MARIADB_SERVICE_NAME ?? "ToyGoMariaDB",

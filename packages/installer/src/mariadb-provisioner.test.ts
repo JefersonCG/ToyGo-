@@ -84,6 +84,7 @@ describe("MariaDbProvisioner", () => {
     expect(mysqlCalls.flatMap((call) => call.args.join(" "))).not.toContain("root-secret");
     expect(mysqlCalls.flatMap((call) => call.args.join(" "))).not.toContain("app-secret");
     expect(mysqlCalls[0].stdin).toContain("CREATE DATABASE IF NOT EXISTS");
+    expect(mysqlCalls[0].stdin).toContain("'toygo_app'@'127.0.0.1'");
     expect(mysqlCalls[1].stdin).toContain("CREATE TABLE installer_probe");
   });
 

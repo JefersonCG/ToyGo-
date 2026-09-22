@@ -55,8 +55,8 @@ function quoteSqlString(value: string): string {
   return `'${value.replaceAll("\\", "\\\\").replaceAll("'", "\\'")}'`;
 }
 
-function quoteSqlAccount(user: string): string {
-  return `${quoteSqlString(user)}@'localhost'`;
+function quoteSqlAccount(user: string, host: string): string {
+  return `${quoteSqlString(user)}@${quoteSqlString(host)}`;
 }
 
 function mysqlArgs(config: ToygoMysqlConfig, user: string, database?: string): string[] {
@@ -151,12 +151,15 @@ export class MariaDbProvisioner {
     const readiness = await this.ensureReady();
     const schema = await readFile(this.#options.schemaPath, "utf8");
     const database = quoteIdentifier(this.#options.config.database);
-    const appUser = quoteSqlAccount(this.#options.config.user);
+    const appAccounts = [
+      quoteSqlAccount(this.#options.config.user, "localhost"),
+      quoteSqlAccount(this.#options.config.user, "127.0.0.1"),
+    ];
     const appPassword = quoteSqlString(this.#options.config.password);
     const bootstrapSql = [
       `CREATE DATABASE IF NOT EXISTS ${database} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`,
-      `CREATE USER IF NOT EXISTS ${appUser} IDENTIFIED BY ${appPassword};`,
-      `GRANT ALL PRIVILEGES ON ${database}.* TO ${appUser};`,
+      ...appAccounts.map((account) => `CREATE USER IF NOT EXISTS ${account} IDENTIFIED BY ${appPassword};`),
+      ...appAccounts.map((account) => `GRANT ALL PRIVILEGES ON ${database}.* TO ${account};`),
       "FLUSH PRIVILEGES;",
     ].join("\n");
 
