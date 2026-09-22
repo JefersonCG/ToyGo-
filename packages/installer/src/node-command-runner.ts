@@ -17,8 +17,22 @@ export class NodeInstallerCommandRunner implements InstallerCommandRunner {
       let stderr = "";
       child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8"); });
       child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8"); });
-      child.on("error", reject);
-      child.on("close", (exitCode) => resolve({ exitCode: exitCode ?? 1, stdout, stderr }));
+      let settled = false;
+      const settle = (result: InstallerCommandResult): void => {
+        if (settled) return;
+        settled = true;
+        resolve(result);
+      };
+      child.on("error", (error) => {
+        if (settled) return;
+        settled = true;
+        reject(error);
+      });
+      // A Windows service can inherit the child stdout/stderr handles. Waiting
+      // for `close` would then keep the installer blocked after the command
+      // process has already exited. The process exit is the completion signal;
+      // the listeners above still collect any output emitted before it.
+      child.on("exit", (exitCode) => settle({ exitCode: exitCode ?? 1, stdout, stderr }));
       if (options?.stdin !== undefined) child.stdin.end(options.stdin);
       else child.stdin.end();
     });
