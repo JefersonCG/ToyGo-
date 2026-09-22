@@ -64,33 +64,6 @@ jobs:
           if (-not (Test-Path -LiteralPath $desktop -PathType Leaf)) { throw "Desktop instalado nao encontrado: $desktop" }
           "TOYGO_INSTALL_ROOT=$installRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Bootstrap MariaDB from the installed Desktop
-        shell: powershell
-        run: |
-          $desktop = Join-Path $env:TOYGO_INSTALL_ROOT 'ToyGo!.exe'
-          $dataDir = Join-Path $env:RUNNER_TEMP 'toygo-mariadb-data'
-          $stdoutPath = Join-Path $env:RUNNER_TEMP 'toygo-provision.stdout.log'
-          $stderrPath = Join-Path $env:RUNNER_TEMP 'toygo-provision.stderr.log'
-          $env:TOYGO_MARIADB_ROOT_PASSWORD = 'ci-root-password'
-          $env:TOYGO_DESKTOP_MARIADB_PASSWORD = 'ci-app-password'
-          $env:TOYGO_DESKTOP_MARIADB_DATABASE = 'toygo_desktop'
-          $env:TOYGO_DESKTOP_MARIADB_USER = 'toygo_ci'
-          $env:TOYGO_MARIADB_DATA_DIR = $dataDir
-          $process = Start-Process -FilePath $desktop -ArgumentList '--toygo-provision' -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
-          if (-not $process.WaitForExit(90000)) {
-            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
-            Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue
-            Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue
-            throw 'Bootstrap MariaDB nao terminou em 90 segundos.'
-          }
-          Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue
-          Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue
-          if ($process.ExitCode -ne 0) { throw "Bootstrap MariaDB falhou com codigo $($process.ExitCode)." }
-          $admin = Join-Path $env:TOYGO_INSTALL_ROOT 'resources\mariadb\11.8\bin\mariadb-admin.exe'
-          $env:MYSQL_PWD = 'ci-root-password'
-          & $admin '--host=127.0.0.1' '--port=3306' '--user=root' 'ping'
-          if ($LASTEXITCODE -ne 0) { throw "MariaDB local nao respondeu ao health check." }
-
       - name: Verify packaged resources
         shell: powershell
         run: |
