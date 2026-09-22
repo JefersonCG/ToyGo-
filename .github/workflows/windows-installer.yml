@@ -69,12 +69,22 @@ jobs:
         run: |
           $desktop = Join-Path $env:TOYGO_INSTALL_ROOT 'ToyGo!.exe'
           $dataDir = Join-Path $env:RUNNER_TEMP 'toygo-mariadb-data'
+          $stdoutPath = Join-Path $env:RUNNER_TEMP 'toygo-provision.stdout.log'
+          $stderrPath = Join-Path $env:RUNNER_TEMP 'toygo-provision.stderr.log'
           $env:TOYGO_MARIADB_ROOT_PASSWORD = 'ci-root-password'
           $env:TOYGO_DESKTOP_MARIADB_PASSWORD = 'ci-app-password'
           $env:TOYGO_DESKTOP_MARIADB_DATABASE = 'toygo_ci'
           $env:TOYGO_DESKTOP_MARIADB_USER = 'toygo_ci'
           $env:TOYGO_MARIADB_DATA_DIR = $dataDir
-          $process = Start-Process -FilePath $desktop -ArgumentList '--toygo-provision' -Wait -PassThru -WindowStyle Hidden
+          $process = Start-Process -FilePath $desktop -ArgumentList '--toygo-provision' -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+          if (-not $process.WaitForExit(90000)) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue
+            Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue
+            throw 'Bootstrap MariaDB nao terminou em 90 segundos.'
+          }
+          Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue
+          Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue
           if ($process.ExitCode -ne 0) { throw "Bootstrap MariaDB falhou com codigo $($process.ExitCode)." }
           $service = Get-Service -Name ToyGoMariaDB -ErrorAction Stop
           if ($service.Status -ne 'Running') { throw "Servico ToyGoMariaDB nao esta ativo: $($service.Status)" }
