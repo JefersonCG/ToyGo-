@@ -30,11 +30,12 @@ controle administrativo no portal.
 
 ## O que ainda nao esta concluido
 
-- Executar o teste de instalacao em uma maquina Windows limpa.
 - Assinar o instalador com Authenticode e publicar o checksum do artefato de
   release.
 - Automatizar o wizard visual de primeira configuracao; o fluxo atual ja tem
   o CLI de provisionamento e o contrato Electron/IPC.
+- Executar a homologacao completa do bootstrap MariaDB pelo Desktop instalado;
+  a instalacao limpa e a presenca dos recursos ja sao verificadas no CI.
 
 O binario nao e baixado silenciosamente pelo aplicativo: o script de build usa
 o manifesto oficial em `infra/mariadb-embedded/11.8/artifact.json`, valida o
@@ -50,5 +51,6 @@ fora do Git por tamanho; a reproducao depende do script versionado.
 
 O comando `npm run dist:win --workspace @toygo/desktop` gera o instalador NSIS
 e prepara o MariaDB automaticamente quando o payload verificado ainda nao
-existe localmente. A homologacao em maquina limpa e a assinatura Authenticode
-continuam fora deste checkout.
+existe localmente. O workflow `windows-installer.yml` instala o pacote em um
+runner Windows limpo e verifica os recursos embarcados. A assinatura
+Authenticode e a homologacao visual continuam fora deste checkout.
