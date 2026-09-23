@@ -25,11 +25,13 @@ que ainda descrevem o projeto como Etapas 1 e 2.
    já existe.
 3. Executar uma homologação completa do bootstrap MariaDB pelo Desktop
    instalado, separada do gate de instalação limpa do CI.
-4. Implementar a persistência real da operação do Desktop: sessões, caixa,
+4. Executar o ciclo ponta a ponta em staging: botão do portal, comando assinado
+   da Central e confirmação no `readLicenseProjection` do Desktop pareado.
+5. Implementar a persistência real da operação do Desktop: sessões, caixa,
    fechamento de conta, pagamentos e migrations aplicadas automaticamente.
-5. Implementar o módulo fiscal brasileiro: NFC-e/SEFAZ, contingência,
+6. Implementar o módulo fiscal brasileiro: NFC-e/SEFAZ, contingência,
    certificados, fila offline e impressão ESC/POS.
-6. Fazer hardening e implantação de produção: segredos, assinatura, backups,
+7. Fazer hardening e implantação de produção: segredos, assinatura, backups,
    observabilidade e procedimento de rollback.
 
 ## Fora do escopo desta rodada
